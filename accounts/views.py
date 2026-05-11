@@ -2,22 +2,16 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from .forms import RegisterForm
 def register_view(request):
-
     if request.method == 'POST':
         form = RegisterForm(request.POST)
-
         if form.is_valid():
-            user = form.save(commit=False)
-            user.save()
+            user = form.save()   
             return redirect('login')
         else:
-            print(form.errors)  # DEBUG (shows why data not saving)
-
+            print(form.errors)
     else:
         form = RegisterForm()
-
     return render(request, 'accounts/register.html', {'form': form})
-
 def login_view(request):
 
     error = None
