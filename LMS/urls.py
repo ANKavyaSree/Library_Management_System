@@ -21,5 +21,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # Home Page
     path('', include('accounts.urls')),
-    # Apps URLs
+    # path('student/',include('student.urls')),
+    # path('teacher/', include('teacher.urls')),
+    # path('librarian/', include('librarian.urls')),
 ]
