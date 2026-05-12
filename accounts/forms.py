@@ -1,11 +1,9 @@
 # accounts/forms.py
-
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import CustomUser
 from django.core.exceptions import ValidationError
 import re
-
 class RegisterForm(UserCreationForm):
     username = forms.CharField(
         max_length=100,
@@ -51,7 +49,6 @@ class RegisterForm(UserCreationForm):
                 "Username already exists"
             )
         return username
-
     # EMAIL VALIDATION
     def clean_email(self):
         email = self.cleaned_data.get('email')
