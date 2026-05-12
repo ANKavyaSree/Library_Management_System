@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'librarian',
     'books',
     'fines',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
