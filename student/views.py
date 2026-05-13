@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from datetime import date, timedelta
+
 from books.models import Book, Category
-from .models import BorrowBook, Fine
+from fines.models import Fine
+from .models import BorrowBook
 
 
 @login_required
@@ -12,12 +14,12 @@ def dashboard(request):
         returned=False
     ).count()
 
-    total_fine = Fine.objects.filter(
-        student=request.user,
+    fines = Fine.objects.filter(
+        user=request.user,
         paid=False
     )
 
-    fine_amount = sum(f.amount for f in total_fine)
+    fine_amount = sum(f.amount for f in fines)
 
     return render(request, 'student/dashboard.html', {
         'total_borrowed': total_borrowed,
@@ -69,7 +71,11 @@ def return_books(request):
 
     if request.method == 'POST':
         borrow_id = request.POST.get('borrow_id')
-        record = get_object_or_404(BorrowBook, id=borrow_id)
+
+        record = get_object_or_404(
+            BorrowBook,
+            id=borrow_id
+        )
 
         record.returned = True
         record.save()
@@ -78,22 +84,18 @@ def return_books(request):
         record.book.save()
 
         if date.today() > record.due_date:
-            late_days = (date.today() - record.due_date).days
+            late_days = (
+                date.today() - record.due_date
+            ).days
+
             Fine.objects.create(
-                student=request.user,
-                borrow=record,
-                amount=late_days * 5
+                user=request.user,
+                amount=late_days * 5,
+                reason="Late return of student book"
             )
 
         return redirect('return_books')
 
     return render(request, 'student/return_books.html', {
         'borrowed': borrowed
-    })
-@login_required
-def fines(request):
-    fines = Fine.objects.filter(student=request.user)
-
-    return render(request, 'student/fines.html', {
-        'fines': fines
     })

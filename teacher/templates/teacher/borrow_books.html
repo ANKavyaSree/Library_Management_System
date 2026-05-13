@@ -38,30 +38,23 @@ Borrow Books
 Search
 </button>
 </div>
-
 </form>
-
 {% for book in books %}
 <div class="card shadow-sm border-0 mb-3">
 <div class="card-body">
-
 <h5>{{ book.title }}</h5>
 <p>Author: {{ book.author }}</p>
 <p>Category: {{ book.category.name }}</p>
 <p>Available: {{ book.available }}</p>
-
 <form method="post">
 {% csrf_token %}
 <input type="hidden" name="book_id" value="{{ book.id }}">
-
 <button type="submit" class="btn btn-primary btn-sm">
 Borrow
 </button>
 </form>
-
 </div>
 </div>
-
 {% empty %}
 <div class="alert alert-warning text-center">
 No books available.
