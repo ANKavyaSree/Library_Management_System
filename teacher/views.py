@@ -1,75 +1,42 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from datetime import date, timedelta
-from books.models import Book, Category
+
+from issue.models import IssueBook
 from fines.models import Fine
-from .models import TeacherBorrowBook
+
+
 @login_required
 def dashboard(request):
-    total_borrowed = TeacherBorrowBook.objects.filter(
-        teacher=request.user,
-        returned=False
+    total_borrowed = IssueBook.objects.filter(
+        user=request.user,
+        status='approved'
     ).count()
-    fines = Fine.objects.filter(
+
+    pending_requests = IssueBook.objects.filter(
+        user=request.user,
+        status='pending'
+    ).count()
+
+    unpaid_fines = Fine.objects.filter(
         user=request.user,
         paid=False
     )
-    fine_amount = sum(f.amount for f in fines)
+
+    fine_amount = sum(f.amount for f in unpaid_fines)
+
     return render(request, 'teacher/dashboard.html', {
         'total_borrowed': total_borrowed,
+        'pending_requests': pending_requests,
         'fine_amount': fine_amount
     })
+
+
 @login_required
-def borrow_books(request):
-    books = Book.objects.filter(available__gt=0)
-    categories = Category.objects.all()
-    query = request.GET.get('q')
-    category = request.GET.get('category')
-    if query:
-        books = books.filter(title__icontains=query)
-    if category:
-        books = books.filter(category_id=category)
-    if request.method == 'POST':
-        book_id = request.POST.get('book_id')
-        book = get_object_or_404(Book, id=book_id)
-        TeacherBorrowBook.objects.create(
-            teacher=request.user,
-            book=book,
-            due_date=date.today() + timedelta(days=15)
-        )
-        book.available -= 1
-        book.save()
-        return redirect('teacher_borrow')
-    return render(request, 'teacher/borrow_books.html', {
-        'books': books,
-        'categories': categories
-    })
-@login_required
-def return_books(request):
-    borrowed = TeacherBorrowBook.objects.filter(
-        teacher=request.user,
-        returned=False
-    )
-    if request.method == 'POST':
-        borrow_id = request.POST.get('borrow_id')
-        record = get_object_or_404(
-            TeacherBorrowBook,
-            id=borrow_id
-        )
-        record.returned = True
-        record.save()
-        record.book.available += 1
-        record.book.save()
-        if date.today() > record.due_date:
-            late_days = (
-                date.today() - record.due_date
-            ).days
-            Fine.objects.create(
-                user=request.user,
-                amount=late_days * 5,
-                reason="Late return of teacher book"
-            )
-        return redirect('teacher_return')
-    return render(request, 'teacher/return_books.html', {
-        'borrowed': borrowed
+def my_requests(request):
+    requests = IssueBook.objects.filter(
+        user=request.user
+    ).order_by('-id')
+
+    return render(request, 'teacher/my_requests.html', {
+        'requests': requests
     })
