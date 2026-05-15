@@ -1,19 +1,12 @@
 from datetime import date, timedelta
-from django.shortcuts import (render,redirect,get_object_or_404)
+from django.shortcuts import (render, redirect,get_object_or_404)
 from django.contrib.auth.decorators import login_required
 from books.models import (Book,Category)
-from books.forms import (BookForm,CategoryForm)
+from books.forms import ( BookForm,CategoryForm)
 from issue.models import IssueBook
 from fines.models import Fine
-from rest_framework.decorators import (
-    api_view,
-    permission_classes
-)
-
-from rest_framework.permissions import (
-    IsAuthenticated
-)
-
+from rest_framework.decorators import (api_view,permission_classes)
+from rest_framework.permissions import (IsAuthenticated)
 from rest_framework.response import Response
 from books.serializers import BookSerializer
 from issue.serializers import IssueBookSerializer
@@ -31,18 +24,28 @@ def dashboard(request):
         'issued_books': IssueBook.objects.filter(
             status='approved'
         ).count(),
-        'total_fines': Fine.objects.count(),
+        # ONLY STUDENT FINES
+        'total_fines': Fine.objects.filter(
+            user__role='student'
+        ).count(),
         'unpaid_fines': Fine.objects.filter(
+            user__role='student',
             paid=False
         ).count(),
     }
-    return render(request,'librarian/dashboard.html',context)
+    return render(
+        request,
+        'librarian/dashboard.html',
+        context
+    )
 # ======================================
 # BOOK LIST
 # ======================================
 @login_required
 def book_list(request):
-    books = Book.objects.all().order_by('-added_on')
+    books = Book.objects.all().order_by(
+        '-added_on'
+    )
     return render(
         request,
         'librarian/book_list.html',
@@ -115,142 +118,354 @@ def add_category(request):
         'librarian/add_category.html',
         {'form': form}
     )
+
+
 # ======================================
 # PENDING REQUESTS
 # ======================================
+
 @login_required
 def pending_requests(request):
+
     requests = IssueBook.objects.filter(
         status='pending'
     ).order_by('-request_date')
+
     return render(
         request,
         'librarian/pending_requests.html',
         {'requests': requests}
     )
+
+
 # ======================================
 # APPROVE REQUEST
 # ======================================
+
 @login_required
 def approve_request(request, pk):
+
     issue = get_object_or_404(
         IssueBook,
         id=pk,
         status='pending'
     )
+
     if issue.book.available > 0:
+
+        # DIFFERENT DUE DAYS
+
         if issue.user.role == 'teacher':
-            days = 15
+            days = 30
+
         else:
-            days = 7
+            days = 14
+
         issue.status = 'approved'
+
         issue.issue_date = date.today()
+
         issue.due_date = (
             date.today() + timedelta(days=days)
         )
+
         issue.save()
+
+        # REDUCE AVAILABLE BOOK COUNT
+
         book = issue.book
+
         book.available -= 1
+
         book.save()
+
     return redirect('pending_requests')
+
+
 # ======================================
 # REJECT REQUEST
 # ======================================
+
 @login_required
 def reject_request(request, pk):
+
     issue = get_object_or_404(
         IssueBook,
         id=pk,
         status='pending'
     )
+
     issue.status = 'rejected'
+
     issue.save()
+
     return redirect('pending_requests')
+
+
 # ======================================
-# ALL FINES
+# RETURNED BOOKS + STUDENT FINES
 # ======================================
+
+@login_required
+def returned_books(request):
+
+    returned = IssueBook.objects.filter(
+        status='returned'
+    ).order_by('-request_date')
+
+    today = date.today()
+
+    for issue in returned:
+
+        # FINE ONLY FOR STUDENTS
+
+        if (
+            issue.user.role == 'student'
+            and issue.due_date
+            and today > issue.due_date
+        ):
+
+            days_late = (
+                today - issue.due_date
+            ).days
+
+            fine_amount = days_late * 5
+
+            fine_exists = Fine.objects.filter(
+                user=issue.user,
+                reason__icontains=issue.book.title
+            ).exists()
+
+            if not fine_exists:
+
+                Fine.objects.create(
+                    user=issue.user,
+                    amount=fine_amount,
+                    reason=f"Late return for {issue.book.title}"
+                )
+
+    return render(
+        request,
+        'librarian/returned_books.html',
+        {'returned': returned}
+    )
+
+
+# ======================================
+# ALL STUDENT FINES
+# ======================================
+
 @login_required
 def all_fines(request):
-    fines = Fine.objects.all().order_by(
-        '-created_at'
-    )
+
+    # ONLY STUDENT FINES
+
+    fines = Fine.objects.filter(
+        user__role='student'
+    ).order_by('-created_at')
+
     return render(
         request,
         'librarian/all_fines.html',
         {'fines': fines}
     )
+
+
 # ======================================
 # DASHBOARD API
 # ======================================
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_api(request):
+
     data = {
+
         'total_books': Book.objects.count(),
+
         'pending_requests': IssueBook.objects.filter(
             status='pending'
         ).count(),
+
         'approved_requests': IssueBook.objects.filter(
             status='approved'
         ).count(),
+
         'returned_books': IssueBook.objects.filter(
             status='returned'
         ).count(),
-        'total_fines': Fine.objects.count(),
+
+        # ONLY STUDENT FINES
+
+        'total_fines': Fine.objects.filter(
+            user__role='student'
+        ).count(),
+
         'unpaid_fines': Fine.objects.filter(
+            user__role='student',
             paid=False
         ).count(),
     }
+
     return Response(data)
+
+
 # ======================================
 # ALL BOOKS API
 # ======================================
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def all_books_api(request):
+
     books = Book.objects.all()
+
     serializer = BookSerializer(
         books,
         many=True
     )
+
     return Response(serializer.data)
+
+
 # ======================================
 # DELETE BOOK API
 # ======================================
+
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_book_api(request, pk):
+
     book = get_object_or_404(
         Book,
         id=pk
     )
+
     book.delete()
+
     return Response(
         {
             'message': 'Book deleted successfully'
         }
     )
+
+
 # ======================================
 # PENDING REQUESTS API
 # ======================================
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def pending_requests_api(request):
+
     requests = IssueBook.objects.filter(
         status='pending'
     )
+
     serializer = IssueBookSerializer(
         requests,
         many=True
     )
+
     return Response(serializer.data)
+
+
 # ======================================
-# ALL FINES API
+# APPROVE REQUEST API
 # ======================================
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def approve_request_api(request, pk):
+
+    issue = get_object_or_404(
+        IssueBook,
+        id=pk,
+        status='pending'
+    )
+
+    if issue.book.available > 0:
+
+        if issue.user.role == 'teacher':
+            days = 30
+
+        else:
+            days = 14
+
+        issue.status = 'approved'
+
+        issue.issue_date = date.today()
+
+        issue.due_date = (
+            date.today() + timedelta(days=days)
+        )
+
+        issue.save()
+
+        book = issue.book
+
+        book.available -= 1
+
+        book.save()
+
+        serializer = IssueBookSerializer(issue)
+
+        return Response(
+            {
+                'message': 'Request approved successfully',
+                'data': serializer.data
+            }
+        )
+
+    return Response(
+        {
+            'message': 'Book not available'
+        }
+    )
+
+
+# ======================================
+# REJECT REQUEST API
+# ======================================
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def reject_request_api(request, pk):
+
+    issue = get_object_or_404(
+        IssueBook,
+        id=pk,
+        status='pending'
+    )
+
+    issue.status = 'rejected'
+
+    issue.save()
+
+    serializer = IssueBookSerializer(issue)
+
+    return Response(
+        {
+            'message': 'Request rejected successfully',
+            'data': serializer.data
+        }
+    )
+
+
+# ======================================
+# ALL STUDENT FINES API
+# ======================================
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def all_fines_api(request):
-    fines = Fine.objects.all()
+
+    # ONLY STUDENT FINES
+
+    fines = Fine.objects.filter(
+        user__role='student'
+    )
+
     serializer = FineSerializer(
         fines,
         many=True

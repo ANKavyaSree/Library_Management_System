@@ -35,13 +35,16 @@ urlpatterns = [
 
     # Fines
     path('fines/', include('fines.urls')),
+    path('api/',include('fines.urls')),
 
     # Teacher
     path('teacher/', include('teacher.urls')),
 
     # Issue
     path('issue/', include('issue.urls')),
+    path('api/', include('issue.urls')),
 
     # Librarian
     path('librarian/', include('librarian.urls')),
+    path('api/',include('librarian.urls')),
 ]

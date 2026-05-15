@@ -1,39 +1,93 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import (
+    render,
+    redirect,
+    get_object_or_404
+)
+
 from django.contrib.auth.decorators import login_required
+
 from .models import Fine
+
 from rest_framework.decorators import (
     api_view,
     permission_classes
 )
+
 from rest_framework.permissions import (
     IsAuthenticated
 )
+
 from .serializers import FineSerializer
+
 from rest_framework.response import Response
+
 from rest_framework import status
+
+
+# ======================================
+# MY FINES
+# ======================================
+
 @login_required
 def my_fines(request):
+
+    # ONLY STUDENTS CAN HAVE FINES
+
+    if request.user.role != 'student':
+
+        return render(
+            request,
+            'fines/no_fines.html'
+        )
+
     fines = Fine.objects.filter(
         user=request.user
-    )
-    total_unpaid = Fine.objects.filter(
+    ).order_by('-created_at')
+
+    unpaid_fines = Fine.objects.filter(
         user=request.user,
         paid=False
     )
-    total_amount = sum(f.amount for f in total_unpaid)
-    return render(request, 'fines/my_fines.html', {
+
+    total_amount = sum(
+        fine.amount for fine in unpaid_fines
+    )
+
+    context = {
         'fines': fines,
         'total_amount': total_amount
-    })
+    }
+
+    return render(
+        request,
+        'fines/my_fines.html',
+        context
+    )
+
+
+# ======================================
+# PAY FINE
+# ======================================
+
 @login_required
 def pay_fine(request, fine_id):
+
+    # TEACHERS SHOULD NOT PAY FINES
+
+    if request.user.role != 'student':
+
+        return redirect('my_fines')
+
     fine = get_object_or_404(
         Fine,
         id=fine_id,
         user=request.user
     )
+
     fine.paid = True
+
     fine.save()
+
     return redirect('my_fines')
 
 
@@ -44,6 +98,17 @@ def pay_fine(request, fine_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def my_fines_api(request):
+
+    # ONLY STUDENTS CAN ACCESS
+
+    if request.user.role != 'student':
+
+        return Response(
+            {
+                'message': 'Teachers do not have fines'
+            },
+            status=status.HTTP_403_FORBIDDEN
+        )
 
     fines = Fine.objects.filter(
         user=request.user
@@ -64,6 +129,17 @@ def my_fines_api(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def unpaid_fines_api(request):
+
+    # ONLY STUDENTS
+
+    if request.user.role != 'student':
+
+        return Response(
+            {
+                'message': 'Teachers do not have fines'
+            },
+            status=status.HTTP_403_FORBIDDEN
+        )
 
     fines = Fine.objects.filter(
         user=request.user,
@@ -86,6 +162,17 @@ def unpaid_fines_api(request):
 @permission_classes([IsAuthenticated])
 def pay_fine_api(request, pk):
 
+    # ONLY STUDENTS
+
+    if request.user.role != 'student':
+
+        return Response(
+            {
+                'message': 'Teachers cannot pay fines because teachers are not fined'
+            },
+            status=status.HTTP_403_FORBIDDEN
+        )
+
     fine = get_object_or_404(
         Fine,
         id=pk,
@@ -93,6 +180,7 @@ def pay_fine_api(request, pk):
     )
 
     if fine.paid:
+
         return Response(
             {
                 'message': 'Fine already paid'
@@ -101,6 +189,7 @@ def pay_fine_api(request, pk):
         )
 
     fine.paid = True
+
     fine.save()
 
     return Response(
@@ -112,14 +201,18 @@ def pay_fine_api(request, pk):
 
 # ======================================
 # ALL FINES API
-# LIBRARIIAN
+# LIBRARIAN
 # ======================================
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def all_fines_api(request):
 
-    fines = Fine.objects.all().order_by('-created_at')
+    # ONLY STUDENT FINES
+
+    fines = Fine.objects.filter(
+        user__role='student'
+    ).order_by('-created_at')
 
     serializer = FineSerializer(
         fines,
@@ -143,6 +236,20 @@ def add_fine_api(request):
     )
 
     if serializer.is_valid():
+
+        user = serializer.validated_data['user']
+
+        # DO NOT ALLOW TEACHER FINES
+
+        if user.role == 'teacher':
+
+            return Response(
+                {
+                    'message': 'Teachers cannot be fined'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         serializer.save()
 
         return Response(
