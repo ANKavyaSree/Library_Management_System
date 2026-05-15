@@ -4,6 +4,23 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from .forms import RegisterForm
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import (
+    api_view,
+    permission_classes
+)
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated
+)
+
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .serializers import (
+    RegisterSerializer,
+    LoginSerializer
+)
 # ---------------- REGISTER VIEW ----------------
 def register_view(request):
     if request.method == 'POST':
@@ -46,54 +63,108 @@ def logout_view(request):
 #                     API VIEWS
 # ======================================================
 # ---------------- REGISTER API ----------------
-@csrf_exempt
+
+# ====================================
+# REGISTER API
+# ====================================
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def register_api(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        form = RegisterForm(data)
-        if form.is_valid():
-            form.save()
-            return JsonResponse({
+
+    serializer = RegisterSerializer(
+        data=request.data
+    )
+
+    if serializer.is_valid():
+
+        serializer.save()
+
+        return Response(
+            {
                 'status': True,
                 'message': 'User registered successfully'
-            })
-        return JsonResponse({
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+    return Response(
+        {
             'status': False,
-            'errors': form.errors
-        })
-    return JsonResponse({'message': 'POST method required'})
-# ---------------- LOGIN API ----------------
-@csrf_exempt
+            'errors': serializer.errors
+        },
+        status=status.HTTP_400_BAD_REQUEST
+    )
+
+
+# ====================================
+# LOGIN API
+# ====================================
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def login_api(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        username = data.get('username')
-        password = data.get('password')
-        role = data.get('role')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            if user.role == role:
-                login(request, user)
-                return JsonResponse({
-                    'status': True,
-                    'message': 'Login successful',
+
+    serializer = LoginSerializer(
+        data=request.data
+    )
+
+    if serializer.is_valid():
+
+        user = serializer.validated_data['user']
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response(
+            {
+                'status': True,
+                'message': 'Login successful',
+
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+
+                'user': {
+                    'id': user.id,
                     'username': user.username,
+                    'email': user.email,
                     'role': user.role
-                })
-            return JsonResponse({
-                'status': False,
-                'message': 'Selected role is incorrect'
-            })
-        return JsonResponse({
+                }
+            }
+        )
+
+    return Response(
+        {
             'status': False,
-            'message': 'Invalid username or password'
-        })
-    return JsonResponse({'message': 'POST method required'})
-# ---------------- LOGOUT API ----------------
-@csrf_exempt
+            'errors': serializer.errors
+        },
+        status=status.HTTP_400_BAD_REQUEST
+    )
+
+
+# ====================================
+# PROFILE API
+# ====================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def profile_api(request):
+
+    user = request.user
+
+    return Response(
+        {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'role': user.role
+        }
+    )
+
+@api_view(['POST'])
 def logout_api(request):
+
     logout(request)
-    return JsonResponse({
+
+    return Response({
         'status': True,
         'message': 'Logout successful'
     })
