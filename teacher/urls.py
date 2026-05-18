@@ -1,4 +1,5 @@
 from django.urls import path
+
 from . import views
 
 urlpatterns = [
@@ -16,20 +17,14 @@ urlpatterns = [
     ),
 
     path(
-        'borrow/<int:book_id>/',
-        views.borrow_book,
-        name='teacher_borrow_book'
+        'my-requests/',
+        views.teacher_my_requests,
+        name='teacher_my_requests'
     ),
 
     path(
-        'issued-books/',
-        views.teacher_issued_books,
-        name='teacher_issued_books'
-    ),
-
-    path(
-        'return-book/<int:pk>/',
-        views.return_book,
-        name='teacher_return_book'
+        'return-books/',
+        views.teacher_return_books,
+        name='teacher_return_books'
     ),
 ]

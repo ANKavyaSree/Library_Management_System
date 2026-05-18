@@ -1,50 +1,235 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Return Books</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
+{% extends 'base.html' %}
 
-<body class="bg-light">
+{% block title %}
+    Return Books
+{% endblock %}
 
-<div class="container mt-5">
+{% block page_title %}
+    Return Books
+{% endblock %}
 
-<h2 class="text-warning text-center mb-4">
-Return Books
-</h2>
+{% block content %}
 
-{% for item in borrowed %}
-<div class="card shadow-sm border-0 mb-3">
-<div class="card-body">
+<!-- TOP HEADER -->
 
-<h5>{{ item.book.title }}</h5>
-<p>Issue Date: {{ item.issue_date }}</p>
-<p>Due Date: {{ item.due_date }}</p>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
 
-<form method="post">
-{% csrf_token %}
-<input type="hidden"
-name="issue_id"
-value="{{ item.id }}">
+    <!-- LEFT -->
 
-<button type="submit"
-class="btn btn-warning btn-sm">
-Return Book
-</button>
-</form>
+    <div>
+
+        <h3 class="fw-bold text-dark mb-1">
+            Borrowed Books
+        </h3>
+
+        <p class="text-muted mb-0">
+            Return your borrowed library books
+        </p>
+
+    </div>
+
+    <!-- RIGHT -->
+
+    <div>
+
+        {% if request.user.role == 'student' %}
+
+        <a href="/student/dashboard/"
+           class="btn btn-dark rounded-pill px-4 py-2 shadow-sm">
+
+            <i class="fa-solid fa-arrow-left me-2"></i>
+
+            Back to Dashboard
+
+        </a>
+
+        {% elif request.user.role == 'teacher' %}
+
+        <a href="/teacher/dashboard/"
+           class="btn btn-dark rounded-pill px-4 py-2 shadow-sm">
+
+            <i class="fa-solid fa-arrow-left me-2"></i>
+
+            Back to Dashboard
+
+        </a>
+
+        {% endif %}
+
+    </div>
 
 </div>
+
+<!-- BOOK LIST -->
+
+<div class="row g-4">
+
+    {% for item in borrowed %}
+
+    <div class="col-md-6">
+
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+
+            <div class="card-body p-4">
+
+                <!-- TOP -->
+
+                <div class="d-flex justify-content-between align-items-start mb-3">
+
+                    <div class="book-icon">
+
+                        <i class="fa-solid fa-book"></i>
+
+                    </div>
+
+                    <span class="badge bg-warning-subtle text-warning px-3 py-2 rounded-pill">
+
+                        <i class="fa-solid fa-clock me-1"></i>
+
+                        Borrowed
+
+                    </span>
+
+                </div>
+
+                <!-- TITLE -->
+
+                <h4 class="fw-bold text-dark">
+
+                    {{ item.book.title }}
+
+                </h4>
+
+                <!-- AUTHOR -->
+
+                <p class="text-muted mb-2">
+
+                    <i class="fa-solid fa-user me-2"></i>
+
+                    {{ item.book.author }}
+
+                </p>
+
+                <!-- CATEGORY -->
+
+                <p class="text-muted mb-2">
+
+                    <i class="fa-solid fa-layer-group me-2"></i>
+
+                    {{ item.book.category.name }}
+
+                </p>
+
+                <!-- DUE DATE -->
+
+                <p class="text-danger mb-4">
+
+                    <i class="fa-solid fa-calendar-days me-2"></i>
+
+                    Due Date :
+                    {{ item.due_date }}
+
+                </p>
+
+                <!-- RETURN FORM -->
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    <input
+                        type="hidden"
+                        name="borrow_id"
+                        value="{{ item.id }}"
+                    >
+
+                    <button
+                        type="submit"
+                        class="btn btn-warning rounded-pill px-4"
+                    >
+
+                        <i class="fa-solid fa-arrow-rotate-left me-2"></i>
+
+                        Return Book
+
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% empty %}
+
+    <div class="col-12">
+
+        <div class="card border-0 shadow-sm rounded-4">
+
+            <div class="card-body text-center py-5">
+
+                <i class="fa-solid fa-book-open empty-icon mb-3"></i>
+
+                <h4 class="text-muted">
+                    No Borrowed Books
+                </h4>
+
+                <p class="text-secondary mb-0">
+                    You currently have no books to return.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
 </div>
 
-{% empty %}
-<div class="alert alert-info text-center">
-No borrowed books.
-</div>
-{% endfor %}
+<style>
 
-</div>
+    .book-icon{
 
-</body>
-</html>
+        width:60px;
+
+        height:60px;
+
+        border-radius:18px;
+
+        background:#fef3c7;
+
+        color:#d97706;
+
+        display:flex;
+
+        align-items:center;
+
+        justify-content:center;
+
+        font-size:24px;
+    }
+
+    .card{
+
+        transition:0.3s;
+    }
+
+    .card:hover{
+
+        transform:translateY(-5px);
+    }
+
+    .empty-icon{
+
+        font-size:70px;
+
+        color:#cbd5e1;
+    }
+
+</style>
+
+{% endblock %}

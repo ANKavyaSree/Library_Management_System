@@ -4,6 +4,13 @@ from django.contrib.auth.decorators import login_required
 from issue.models import IssueBook
 from fines.models import Fine
 
+@login_required
+def profile(request):
+
+    return render(
+        request,
+        'student/profile.html'
+    )
 
 @login_required
 def dashboard(request):

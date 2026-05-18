@@ -30,18 +30,137 @@
 
     </div>
 
-    <a href="/librarian/dashboard/"
-       class="btn btn-dark rounded-pill px-4">
+    <div class="d-flex gap-2 flex-wrap">
 
-        <i class="fa-solid fa-arrow-left me-2"></i>
+        <!-- ADD FINE -->
 
-        Back
+        <a href="/librarian/fines/add/"
+           class="btn btn-danger rounded-pill px-4">
 
-    </a>
+            <i class="fa-solid fa-plus me-2"></i>
+
+            Add Fine
+
+        </a>
+
+        <!-- BACK -->
+
+        <a href="/librarian/dashboard/"
+           class="btn btn-dark rounded-pill px-4">
+
+            <i class="fa-solid fa-arrow-left me-2"></i>
+
+            Back
+
+        </a>
+
+    </div>
 
 </div>
 
-<!-- TABLE CARD -->
+<!-- SUMMARY CARDS -->
+
+<div class="row g-4 mb-4">
+
+    <!-- TOTAL FINES -->
+
+    <div class="col-md-4">
+
+        <div class="card border-0 shadow-sm rounded-4">
+
+            <div class="card-body text-center p-4">
+
+                <div class="summary-icon bg-danger-subtle text-danger mb-3">
+
+                    <i class="fa-solid fa-money-bill-wave"></i>
+
+                </div>
+
+                <h3 class="fw-bold">
+
+                    {{ fines.count }}
+
+                </h3>
+
+                <p class="text-muted mb-0">
+
+                    Total Fines
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- PAID -->
+
+    <div class="col-md-4">
+
+        <div class="card border-0 shadow-sm rounded-4">
+
+            <div class="card-body text-center p-4">
+
+                <div class="summary-icon bg-success-subtle text-success mb-3">
+
+                    <i class="fa-solid fa-circle-check"></i>
+
+                </div>
+
+                <h3 class="fw-bold">
+
+                    {{ paid_count }}
+
+                </h3>
+
+                <p class="text-muted mb-0">
+
+                    Paid Fines
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- UNPAID -->
+
+    <div class="col-md-4">
+
+        <div class="card border-0 shadow-sm rounded-4">
+
+            <div class="card-body text-center p-4">
+
+                <div class="summary-icon bg-warning-subtle text-warning mb-3">
+
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+
+                </div>
+
+                <h3 class="fw-bold">
+
+                    {{ unpaid_count }}
+
+                </h3>
+
+                <p class="text-muted mb-0">
+
+                    Unpaid Fines
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- TABLE -->
 
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
 
@@ -79,6 +198,12 @@
 
                         </th>
 
+                        <th class="py-3">
+
+                            Date
+
+                        </th>
+
                     </tr>
 
                 </thead>
@@ -101,9 +226,19 @@
 
                                 </div>
 
-                                <div class="fw-semibold">
+                                <div>
 
-                                    {{ fine.user.username }}
+                                    <div class="fw-semibold">
+
+                                        {{ fine.user.username }}
+
+                                    </div>
+
+                                    <small class="text-muted">
+
+                                        Student
+
+                                    </small>
 
                                 </div>
 
@@ -159,13 +294,21 @@
 
                         </td>
 
+                        <!-- DATE -->
+
+                        <td>
+
+                            {{ fine.created_at|date:"d M Y" }}
+
+                        </td>
+
                     </tr>
 
                     {% empty %}
 
                     <tr>
 
-                        <td colspan="4" class="text-center py-5">
+                        <td colspan="5" class="text-center py-5">
 
                             <div class="empty-box">
 
@@ -256,6 +399,25 @@
         font-size:18px;
     }
 
+    .summary-icon{
+
+        width:70px;
+
+        height:70px;
+
+        border-radius:18px;
+
+        display:flex;
+
+        align-items:center;
+
+        justify-content:center;
+
+        margin:auto;
+
+        font-size:28px;
+    }
+
     .empty-box{
 
         padding:40px 20px;
@@ -266,6 +428,16 @@
         font-size:65px;
 
         color:#cbd5e1;
+    }
+
+    .card{
+
+        transition:0.3s;
+    }
+
+    .card:hover{
+
+        transform:translateY(-4px);
     }
 
 </style>

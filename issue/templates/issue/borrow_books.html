@@ -1,78 +1,348 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Request Book</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
+{% extends 'base.html' %}
 
-<body class="bg-light">
+{% block title %}
+    Borrow Books
+{% endblock %}
 
-<div class="container mt-5">
+{% block page_title %}
+    Borrow Books
+{% endblock %}
 
-<h2 class="text-primary text-center mb-4">
-Request Book
-</h2>
+{% block content %}
 
-<form method="get" class="row g-3 mb-4">
+<!-- TOP HEADER -->
 
-<div class="col-md-5">
-<input type="text" name="q" class="form-control"
-placeholder="Search title">
-</div>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
 
-<div class="col-md-4">
-<select name="category" class="form-select">
-<option value="">All Categories</option>
+    <!-- LEFT -->
 
-{% for cat in categories %}
-<option value="{{ cat.id }}">
-{{ cat.name }}
-</option>
-{% endfor %}
-</select>
-</div>
+    <div>
 
-<div class="col-md-3 d-grid">
-<button type="submit" class="btn btn-success">
-Search
-</button>
-</div>
+        <h3 class="fw-bold text-dark mb-1">
+            Library Books
+        </h3>
 
-</form>
+        <p class="text-muted mb-0">
+            Search and request books from the library
+        </p>
 
-{% for book in books %}
-<div class="card shadow-sm border-0 mb-3">
-<div class="card-body">
+    </div>
 
-<h5>{{ book.title }}</h5>
-<p>Author: {{ book.author }}</p>
-<p>Category: {{ book.category.name }}</p>
-<p>Available: {{ book.available }}</p>
+    <!-- RIGHT -->
 
-<form method="post">
-{% csrf_token %}
-<input type="hidden"
-name="book_id"
-value="{{ book.id }}">
+    <div>
 
-<button type="submit"
-class="btn btn-primary btn-sm">
-Request Book
-</button>
-</form>
+        {% if request.user.role == 'student' %}
 
-</div>
-</div>
+        <a href="/student/dashboard/"
+           class="btn btn-dark rounded-pill px-4 py-2 shadow-sm">
 
-{% empty %}
-<div class="alert alert-warning text-center">
-No books available.
-</div>
-{% endfor %}
+            <i class="fa-solid fa-arrow-left me-2"></i>
+
+            Back to Dashboard
+
+        </a>
+
+        {% elif request.user.role == 'teacher' %}
+
+        <a href="/teacher/dashboard/"
+           class="btn btn-dark rounded-pill px-4 py-2 shadow-sm">
+
+            <i class="fa-solid fa-arrow-left me-2"></i>
+
+            Back to Dashboard
+
+        </a>
+
+        {% endif %}
+
+    </div>
 
 </div>
 
-</body>
-</html>
+<!-- SEARCH SECTION -->
+
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+
+    <div class="card-body">
+
+        <form method="get" class="row g-3">
+
+            <div class="col-md-5">
+
+                <label class="form-label fw-semibold">
+
+                    Search Book
+
+                </label>
+
+                <div class="input-group">
+
+                    <span class="input-group-text bg-white border-end-0">
+
+                        <i class="fa-solid fa-magnifying-glass text-secondary"></i>
+
+                    </span>
+
+                    <input
+                        type="text"
+                        name="q"
+                        class="form-control border-start-0"
+                        placeholder="Search by title"
+                        value="{{ request.GET.q }}"
+                    >
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <label class="form-label fw-semibold">
+
+                    Category
+
+                </label>
+
+                <select
+                    name="category"
+                    class="form-select"
+                >
+
+                    <option value="">
+                        All Categories
+                    </option>
+
+                    {% for cat in categories %}
+
+                    <option
+                        value="{{ cat.id }}"
+                        {% if request.GET.category == cat.id|stringformat:"s" %}
+                            selected
+                        {% endif %}
+                    >
+
+                        {{ cat.name }}
+
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+            <div class="col-md-3 d-flex align-items-end">
+
+                <button
+                    type="submit"
+                    class="btn btn-success w-100 rounded-pill"
+                >
+
+                    <i class="fa-solid fa-filter me-2"></i>
+
+                    Search
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<!-- BOOKS -->
+
+<div class="row g-4">
+
+    {% for book in books %}
+
+    <div class="col-md-6">
+
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+
+            <div class="card-body">
+
+                <!-- TOP -->
+
+                <div class="d-flex justify-content-between align-items-start mb-3">
+
+                    <div class="book-icon">
+
+                        <i class="fa-solid fa-book"></i>
+
+                    </div>
+
+                    {% if book.available > 0 %}
+
+                    <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">
+
+                        <i class="fa-solid fa-circle-check me-1"></i>
+
+                        Available : {{ book.available }}
+
+                    </span>
+
+                    {% else %}
+
+                    <span class="badge bg-danger px-3 py-2 rounded-pill">
+
+                        <i class="fa-solid fa-circle-xmark me-1"></i>
+
+                        Out of Stock
+
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+                <!-- BOOK TITLE -->
+
+                <h5 class="fw-bold text-dark">
+
+                    {{ book.title }}
+
+                </h5>
+
+                <!-- AUTHOR -->
+
+                <p class="text-muted mb-2">
+
+                    <i class="fa-solid fa-user me-2 text-secondary"></i>
+
+                    {{ book.author }}
+
+                </p>
+
+                <!-- CATEGORY -->
+
+                <p class="text-muted mb-4">
+
+                    <i class="fa-solid fa-layer-group me-2 text-secondary"></i>
+
+                    {{ book.category.name }}
+
+                </p>
+
+                <!-- BUTTON -->
+
+                {% if book.available > 0 %}
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    <input
+                        type="hidden"
+                        name="book_id"
+                        value="{{ book.id }}"
+                    >
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary rounded-pill px-4"
+                    >
+
+                        <i class="fa-solid fa-book-open-reader me-2"></i>
+
+                        Borrow Book
+
+                    </button>
+
+                </form>
+
+                {% else %}
+
+                <button
+                    class="btn btn-secondary rounded-pill px-4"
+                    disabled
+                >
+
+                    <i class="fa-solid fa-ban me-2"></i>
+
+                    Not Available
+
+                </button>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% empty %}
+
+    <div class="col-12">
+
+        <div class="card border-0 shadow-sm rounded-4">
+
+            <div class="card-body text-center py-5">
+
+                <i class="fa-solid fa-book-open empty-icon mb-3"></i>
+
+                <h4 class="text-muted">
+                    No Books Available
+                </h4>
+
+                <p class="text-secondary mb-0">
+                    Try searching with another title or category.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+<style>
+
+    .book-icon{
+
+        width:60px;
+
+        height:60px;
+
+        border-radius:18px;
+
+        background:#ccfbf1;
+
+        color:#0f766e;
+
+        display:flex;
+
+        align-items:center;
+
+        justify-content:center;
+
+        font-size:24px;
+    }
+
+    .card{
+
+        transition:0.3s;
+    }
+
+    .card:hover{
+
+        transform:translateY(-4px);
+    }
+
+    .empty-icon{
+
+        font-size:70px;
+
+        color:#cbd5e1;
+    }
+
+</style>
+
+{% endblock %}

@@ -1,88 +1,246 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
+from django.shortcuts import (
+    render,
+    redirect
+)
+
+from django.contrib.auth import (
+    authenticate,
+    login,
+    logout
+)
+
+from django.contrib import messages
+
 from .forms import RegisterForm
-from rest_framework.response import Response
-from rest_framework import status
+
 from rest_framework.decorators import (
     api_view,
     permission_classes
 )
+
 from rest_framework.permissions import (
     AllowAny,
     IsAuthenticated
 )
 
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.response import Response
 
-from .serializers import (
-    RegisterSerializer,
-    LoginSerializer
+from rest_framework import status
+
+from rest_framework_simplejwt.tokens import (
+    RefreshToken
 )
-# ---------------- REGISTER VIEW ----------------
-def register_view(request):
-    if request.method == 'POST':
-        form = RegisterForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('login')
-        else:
-            print(form.errors)
-    else:
-        form = RegisterForm()
-    return render(request, 'accounts/register.html', {'form': form})
-# ---------------- LOGIN VIEW ----------------
-def login_view(request):
-    error = None
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        role = request.POST.get('role')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            if user.role == role:
-                login(request, user)
-                if role == 'student':
-                    return redirect('student_dashboard')
-                elif role == 'teacher':
-                    return redirect('teacher_dashboard')
-                elif role == 'librarian':
-                    return redirect('librarian_dashboard')
-            else:
-                error = "Selected role is incorrect"
-        else:
-            error = "Invalid username or password"
-    return render(request, 'accounts/login.html', {'error': error})
-# ---------------- LOGOUT VIEW ----------------
-def logout_view(request):
-    logout(request)
-    return redirect('login')
-# ======================================================
-#                     API VIEWS
-# ======================================================
-# ---------------- REGISTER API ----------------
 
-# ====================================
-# REGISTER API
-# ====================================
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def register_api(request):
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 
-    serializer = RegisterSerializer(
-        data=request.data
+
+@login_required
+def profile_view(request):
+
+    return render(
+        request,
+        'accounts/profile.html'
     )
 
-    if serializer.is_valid():
 
-        serializer.save()
+def csrf_error(request, reason=""):
+
+    return redirect('login')
+
+# ==========================================
+# ROLE BASED REDIRECT
+# ==========================================
+
+def redirect_by_role(user):
+
+    role = getattr(user, 'role', None)
+
+    if role == 'student':
+
+        return redirect('/student/dashboard/')
+
+    elif role == 'teacher':
+
+        return redirect('/teacher/dashboard/')
+
+    elif role == 'librarian':
+
+        return redirect('/librarian/dashboard/')
+
+    return redirect('login')
+
+
+# ==========================================
+# GENERATE JWT TOKENS
+# ==========================================
+
+def get_tokens_for_user(user):
+
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
+
+# ==========================================
+# REGISTER VIEW
+# ==========================================
+
+def register_view(request):
+
+    # block register if logged in
+
+    if request.user.is_authenticated:
+
+        return redirect_by_role(request.user)
+
+    if request.method == 'POST':
+
+        form = RegisterForm(request.POST)
+
+        if form.is_valid():
+
+            form.save()
+
+            messages.success(
+                request,
+                'Registration successful'
+            )
+
+            return redirect('login')
+
+    else:
+
+        form = RegisterForm()
+
+    return render(
+        request,
+        'accounts/register.html',
+        {
+            'form': form
+        }
+    )
+
+
+# ==========================================
+# LOGIN VIEW
+# ==========================================
+
+def login_view(request):
+
+    # if already logged in in this browser
+
+    if request.user.is_authenticated:
+
+        messages.error(
+            request,
+            f'{request.user.username} is already logged in. Please logout first.'
+        )
+
+        logout(request)
+
+        return redirect('login')
+
+    if request.method == 'POST':
+
+        username = request.POST.get('username')
+
+        password = request.POST.get('password')
+
+        role = request.POST.get('role')
+
+        user = authenticate(
+            request,
+            username=username,
+            password=password
+        )
+
+        if user is not None:
+
+            # validate role
+
+            if getattr(user, 'role', None) != role:
+
+                messages.error(
+                    request,
+                    'Invalid role selected'
+                )
+
+                return redirect('login')
+
+            # login user
+
+            login(request, user)
+
+            messages.success(
+                request,
+                'Login successful'
+            )
+
+            return redirect_by_role(user)
+
+        else:
+
+            messages.error(
+                request,
+                'Invalid username or password'
+            )
+
+            return redirect('login')
+
+    return render(
+        request,
+        'accounts/login.html'
+    )
+# ==========================================
+# LOGOUT VIEW
+# ==========================================
+
+def logout_view(request):
+
+    logout(request)
+
+    messages.success(
+        request,
+        'Logout successful'
+    )
+
+    return redirect('login')
+
+
+# ==========================================
+# REGISTER API
+# ==========================================
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+
+def register_api(request):
+
+    if request.user.is_authenticated:
+
+        return Response(
+            {
+                'status': False,
+                'message': 'Already logged in'
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    form = RegisterForm(request.data)
+
+    if form.is_valid():
+
+        user = form.save()
 
         return Response(
             {
                 'status': True,
-                'message': 'User registered successfully'
+                'message': 'User registered successfully',
+                'user_id': user.id
             },
             status=status.HTTP_201_CREATED
         )
@@ -90,62 +248,102 @@ def register_api(request):
     return Response(
         {
             'status': False,
-            'errors': serializer.errors
+            'errors': form.errors
         },
         status=status.HTTP_400_BAD_REQUEST
     )
 
 
-# ====================================
+# ==========================================
 # LOGIN API
-# ====================================
+# ==========================================
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+
 def login_api(request):
 
-    serializer = LoginSerializer(
-        data=request.data
+    if request.user.is_authenticated:
+
+        tokens = get_tokens_for_user(request.user)
+
+        return Response(
+            {
+                'status': True,
+                'message': 'Already logged in',
+                'refresh': tokens['refresh'],
+                'access': tokens['access'],
+                'user': {
+                    'id': request.user.id,
+                    'username': request.user.username,
+                    'email': request.user.email,
+                    'role': getattr(request.user, 'role', None)
+                }
+            }
+        )
+
+    username = request.data.get('username')
+
+    password = request.data.get('password')
+
+    role = request.data.get('role')
+
+    user = authenticate(
+        request,
+        username=username,
+        password=password
     )
 
-    if serializer.is_valid():
+    if user is not None:
 
-        user = serializer.validated_data['user']
+        if getattr(user, 'role', None) != role:
 
-        refresh = RefreshToken.for_user(user)
+            return Response(
+                {
+                    'status': False,
+                    'message': 'Invalid role selected'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        login(request, user)
+
+        tokens = get_tokens_for_user(user)
 
         return Response(
             {
                 'status': True,
                 'message': 'Login successful',
 
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
+                'refresh': tokens['refresh'],
+                'access': tokens['access'],
 
                 'user': {
                     'id': user.id,
                     'username': user.username,
                     'email': user.email,
-                    'role': user.role
+                    'role': getattr(user, 'role', None)
                 }
-            }
+            },
+            status=status.HTTP_200_OK
         )
 
     return Response(
         {
             'status': False,
-            'errors': serializer.errors
+            'message': 'Invalid credentials'
         },
-        status=status.HTTP_400_BAD_REQUEST
+        status=status.HTTP_401_UNAUTHORIZED
     )
 
 
-# ====================================
+# ==========================================
 # PROFILE API
-# ====================================
+# ==========================================
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+
 def profile_api(request):
 
     user = request.user
@@ -155,16 +353,26 @@ def profile_api(request):
             'id': user.id,
             'username': user.username,
             'email': user.email,
-            'role': user.role
+            'role': getattr(user, 'role', None)
         }
     )
 
+
+# ==========================================
+# LOGOUT API
+# ==========================================
+
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
+
 def logout_api(request):
 
     logout(request)
 
-    return Response({
-        'status': True,
-        'message': 'Logout successful'
-    })
+    return Response(
+        {
+            'status': True,
+            'message': 'Logout successful'
+        },
+        status=status.HTTP_200_OK
+    )

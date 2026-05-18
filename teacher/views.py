@@ -7,24 +7,15 @@ from django.shortcuts import (
 from django.contrib.auth.decorators import login_required
 
 from books.models import Book
+
+from books.models import Category
+
 from issue.models import IssueBook
 
 
-# ======================================
-# TEACHER DASHBOARD
-# ======================================
-@login_required
-def teacher_issued_books(request):
-
-    issues = IssueBook.objects.filter(
-        user=request.user
-    ).order_by('-request_date')
-
-    return render(
-        request,
-        'teacher/issued_books.html',
-        {'issues': issues}
-    )
+# =========================================
+# DASHBOARD
+# =========================================
 
 @login_required
 def teacher_dashboard(request):
@@ -56,9 +47,9 @@ def teacher_dashboard(request):
     )
 
 
-# ======================================
-# VIEW ALL BOOKS
-# ======================================
+# =========================================
+# BORROW BOOKS
+# =========================================
 
 @login_required
 def teacher_books(request):
@@ -67,67 +58,127 @@ def teacher_books(request):
         '-added_on'
     )
 
-    return render(
-        request,
-        'teacher/books.html',
-        {'books': books}
-    )
+    categories = Category.objects.all()
 
+    q = request.GET.get('q')
 
-# ======================================
-# BORROW BOOK
-# ======================================
+    category = request.GET.get('category')
 
-@login_required
-def borrow_book(request, book_id):
+    if q:
 
-    book = get_object_or_404(
-        Book,
-        id=book_id
-    )
+        books = books.filter(
+            title__icontains=q
+        )
 
-    already_requested = IssueBook.objects.filter(
-        user=request.user,
-        book=book,
-        status__in=['pending', 'approved']
-    ).exists()
+    if category:
 
-    if not already_requested and book.available > 0:
+        books = books.filter(
+            category_id=category
+        )
 
-        IssueBook.objects.create(
+    if request.method == 'POST':
+
+        book_id = request.POST.get('book_id')
+
+        book = get_object_or_404(
+            Book,
+            id=book_id
+        )
+
+        already_requested = IssueBook.objects.filter(
             user=request.user,
             book=book,
-            status='pending'
+            status__in=['pending', 'approved']
+        ).exists()
+
+        if not already_requested and book.available > 0:
+
+            IssueBook.objects.create(
+                user=request.user,
+                book=book,
+                status='pending'
+            )
+
+            book.available -= 1
+
+            book.save()
+
+        return redirect(
+            'teacher_my_requests'
         )
 
     return render(
         request,
-        'teacher/request_sent.html'
+        'issue/borrow_books.html',
+        {
+            'books': books,
+            'categories': categories
+        }
     )
-# ======================================
-# RETURN BOOK
-# ======================================
+
+
+# =========================================
+# MY REQUESTS
+# =========================================
 
 @login_required
-def return_book(request, pk):
+def teacher_my_requests(request):
 
-    issue = get_object_or_404(
-        IssueBook,
-        id=pk,
+    requests = IssueBook.objects.filter(
+        user=request.user
+    ).order_by('-request_date')
+
+    return render(
+        request,
+        'teacher/my_requests.html',
+        {
+            'requests': requests
+        }
+    )
+
+
+# =========================================
+# RETURN BOOKS
+# =========================================
+
+@login_required
+def teacher_return_books(request):
+
+    borrowed = IssueBook.objects.filter(
         user=request.user,
         status='approved'
     )
 
-    issue.status = 'returned'
+    if request.method == 'POST':
 
-    issue.save()
+        borrow_id = request.POST.get(
+            'borrow_id'
+        )
 
-    # increase available books
+        issue = get_object_or_404(
+            IssueBook,
+            id=borrow_id,
+            user=request.user
+        )
 
-    book = issue.book
+        issue.status = 'returned'
 
-    book.available += 1
+        issue.save()
 
-    book.save()
+        book = issue.book
 
-    return redirect('teacher_issued_books')
+        book.available += 1
+
+        book.save()
+
+        return redirect(
+            'teacher_my_requests'
+        )
+
+    return render(
+        request,
+        'issue/return_books.html',
+        {
+            'borrowed': borrowed
+        }
+    )

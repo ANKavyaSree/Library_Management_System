@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    My Books
+{% endblock %}
+
+{% block page_title %}
+    My Borrowed Books
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+
+    {% for item in books %}
+
+    <div class="col-md-6">
+
+        <div class="card border-0 shadow-sm rounded-4">
+
+            <div class="card-body p-4">
+
+                <div class="d-flex justify-content-between mb-3">
+
+                    <div class="book-icon">
+
+                        <i class="fa-solid fa-book-open-reader"></i>
+
+                    </div>
+
+                    <span class="badge bg-success rounded-pill px-3 py-2">
+
+                        Borrowed
+
+                    </span>
+
+                </div>
+
+                <h4 class="fw-bold">
+
+                    {{ item.book.title }}
+
+                </h4>
+
+                <p class="text-muted">
+
+                    <i class="fa-solid fa-layer-group me-2"></i>
+
+                    {{ item.book.category.name }}
+
+                </p>
+
+                <p class="text-danger">
+
+                    <i class="fa-solid fa-calendar-days me-2"></i>
+
+                    Due Date :
+                    {{ item.due_date }}
+
+                </p>
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    <input type="hidden"
+                           name="borrow_id"
+                           value="{{ item.id }}">
+
+                    <button type="submit"
+                            class="btn btn-warning rounded-pill px-4">
+
+                        <i class="fa-solid fa-arrow-rotate-left me-2"></i>
+
+                        Return Book
+
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% empty %}
+
+    <div class="col-12">
+
+        <div class="alert alert-info text-center">
+
+            No borrowed books.
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+<style>
+
+    .book-icon{
+
+        width:60px;
+
+        height:60px;
+
+        border-radius:18px;
+
+        background:#dcfce7;
+
+        color:#16a34a;
+
+        display:flex;
+
+        align-items:center;
+
+        justify-content:center;
+
+        font-size:24px;
+    }
+
+</style>
+
+{% endblock %}

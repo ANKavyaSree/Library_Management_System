@@ -37,7 +37,7 @@ def my_fines(request):
 
         return render(
             request,
-            'fines/no_fines.html'
+            'fines/my_fines.html'
         )
 
     fines = Fine.objects.filter(
