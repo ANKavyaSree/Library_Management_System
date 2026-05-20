@@ -19,7 +19,7 @@ SECRET_KEY = 'django-insecure-n++lpd-2cgiontz+rg9y4mi=qv2p7_tu@i3emb!5d48h%+i1nv
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # ==========================================
@@ -242,3 +242,4 @@ CSRF_FAILURE_VIEW = 'accounts.views.csrf_error'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
