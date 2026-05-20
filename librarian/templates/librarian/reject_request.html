@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Reject Request
+{% endblock %}
+
+{% block page_title %}
+Reject Request
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <!-- PAGE HEADER -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2 class="fw-bold text-danger mb-1">
+
+                Reject Book Request
+
+            </h2>
+
+            <p class="text-muted mb-0">
+
+                Provide a valid reason for rejecting this request
+
+            </p>
+
+        </div>
+
+        <a href="/librarian/pending/"
+           class="btn btn-outline-dark rounded-pill px-4">
+
+            <i class="fa-solid fa-arrow-left me-2"></i>
+
+            Back
+
+        </a>
+
+    </div>
+
+    <!-- CARD -->
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+        <!-- TOP BAR -->
+
+        <div class="bg-danger text-white p-4">
+
+            <h4 class="fw-bold mb-1">
+
+                Request Rejection Form
+
+            </h4>
+
+            <p class="mb-0 opacity-75">
+
+                The student/teacher will be able to view this reason
+
+            </p>
+
+        </div>
+
+        <!-- FORM -->
+
+        <div class="card-body p-5">
+
+            <form method="POST">
+
+                {% csrf_token %}
+
+                <!-- REQUEST INFO -->
+
+                <div class="row g-4 mb-4">
+
+                    <div class="col-md-6">
+
+                        <label class="form-label fw-semibold text-dark">
+
+                            User
+
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control custom-input"
+                            value="{{ issue.user.username }}"
+                            readonly
+                        >
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="form-label fw-semibold text-dark">
+
+                            Book
+
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control custom-input"
+                            value="{{ issue.book.title }}"
+                            readonly
+                        >
+
+                    </div>
+
+                </div>
+
+                <!-- REASON -->
+
+                <div class="mb-4">
+
+                    <label class="form-label fw-semibold text-dark">
+
+                        Rejection Reason
+
+                    </label>
+
+                    <textarea
+                        name="reason"
+                        class="form-control custom-input"
+                        rows="6"
+                        placeholder="Example: Book is currently unavailable / Request limit exceeded / Invalid request..."
+                        required></textarea>
+
+                </div>
+
+                <!-- WARNING -->
+
+                <div class="alert alert-warning rounded-4 border-0 mb-4">
+
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+
+                    Please provide a clear rejection reason. This message will be shown to the user.
+
+                </div>
+
+                <!-- BUTTONS -->
+
+                <div class="d-flex gap-3 flex-wrap">
+
+                    <button
+                        type="submit"
+                        class="btn btn-danger rounded-pill px-5 py-2">
+
+                        <i class="fa-solid fa-xmark me-2"></i>
+
+                        Reject Request
+
+                    </button>
+
+                    <a href="/librarian/pending/"
+                       class="btn btn-secondary rounded-pill px-5 py-2">
+
+                        Cancel
+
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+
+    .custom-input{
+
+        border-radius:14px;
+
+        padding:14px 16px;
+
+        border:1px solid #d1d5db;
+
+        transition:0.3s;
+    }
+
+    .custom-input:focus{
+
+        border-color:#dc2626;
+
+        box-shadow:0 0 0 4px rgba(220,38,38,0.15);
+    }
+
+    textarea{
+
+        resize:none;
+    }
+
+    .card{
+
+        transition:0.3s;
+    }
+
+    .card:hover{
+
+        transform:translateY(-3px);
+    }
+
+</style>
+
+{% endblock %}

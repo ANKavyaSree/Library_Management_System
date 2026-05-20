@@ -6,8 +6,7 @@ from django.shortcuts import (
 
 from django.contrib.auth.decorators import login_required
 
-from .models import Fine
-
+from .models import Fine,Payment
 from rest_framework.decorators import (
     api_view,
     permission_classes
@@ -16,7 +15,7 @@ from rest_framework.decorators import (
 from rest_framework.permissions import (
     IsAuthenticated
 )
-
+from .forms import PaymentForm
 from .serializers import FineSerializer
 
 from rest_framework.response import Response
@@ -30,15 +29,6 @@ from rest_framework import status
 
 @login_required
 def my_fines(request):
-
-    # ONLY STUDENTS CAN HAVE FINES
-
-    if request.user.role != 'student':
-
-        return render(
-            request,
-            'fines/my_fines.html'
-        )
 
     fines = Fine.objects.filter(
         user=request.user
@@ -64,31 +54,49 @@ def my_fines(request):
         context
     )
 
-
 # ======================================
 # PAY FINE
 # ======================================
-
 @login_required
-def pay_fine(request, fine_id):
-
-    # TEACHERS SHOULD NOT PAY FINES
-
-    if request.user.role != 'student':
-
-        return redirect('my_fines')
+def pay_fine(request, pk):
 
     fine = get_object_or_404(
         Fine,
-        id=fine_id,
+        id=pk,
         user=request.user
     )
 
-    fine.paid = True
+    if request.method == 'POST':
 
-    fine.save()
+        form = PaymentForm(
+            request.POST,
+            request.FILES
+        )
 
-    return redirect('my_fines')
+        if form.is_valid():
+
+            payment = form.save(commit=False)
+
+            payment.user = request.user
+
+            payment.fine = fine
+
+            payment.save()
+
+            return redirect('my_fines')
+
+    else:
+
+        form = PaymentForm()
+
+    return render(
+        request,
+        'fines/pay_fine.html',
+        {
+            'fine': fine,
+            'form': form
+        }
+    )
 
 
 # ======================================
@@ -100,12 +108,11 @@ def pay_fine(request, fine_id):
 def my_fines_api(request):
 
     # ONLY STUDENTS CAN ACCESS
-
-    if request.user.role != 'student':
+    if request.user.role not in ['student', 'teacher']:
 
         return Response(
             {
-                'message': 'Teachers do not have fines'
+                'message': 'No fines available'
             },
             status=status.HTTP_403_FORBIDDEN
         )

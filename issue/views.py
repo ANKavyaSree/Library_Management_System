@@ -8,6 +8,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import IssueBookSerializer
 from datetime import date, timedelta
+from django.contrib import messages
+from issue.models import IssueBook
+from fines.models import Fine
 @login_required
 def borrow_books(request):
     books = Book.objects.filter(
@@ -65,31 +68,143 @@ def borrow_books(request):
             'categories': categories
         }
     )
-
-
 @login_required
 def return_books(request):
+
+    # FETCH APPROVED BOOKS
+
     borrowed = IssueBook.objects.filter(
         user=request.user,
         status='approved'
     )
 
-    if request.method == 'POST':
-        issue_id = request.POST.get('issue_id')
+    # HANDLE RETURN
 
-        record = get_object_or_404(
-            IssueBook,
-            id=issue_id,
-            user=request.user
+    if request.method == 'POST':
+
+        issue_id = request.POST.get(
+            'issue_id'
         )
 
-        record.status = 'returned'
-        record.save()
+        return_type = request.POST.get(
+            'return_type'
+        )
 
-        record.book.available += 1
-        record.book.save()
+        reason = request.POST.get(
+            'reason'
+        )
 
-        return redirect('/issue/return/')
+        issue = get_object_or_404(
+            IssueBook,
+            id=issue_id,
+            user=request.user,
+            status='approved'
+        )
+
+        # =====================================
+        # NORMAL RETURN
+        # =====================================
+
+        if return_type == 'normal':
+
+            issue.status = 'returned'
+
+            issue.return_reason = ''
+
+            issue.save(
+                update_fields=[
+                    'status',
+                    'return_reason'
+                ]
+            )
+
+            # INCREASE AVAILABLE BOOKS
+
+            book = issue.book
+
+            book.available += 1
+
+            book.save(
+                update_fields=['available']
+            )
+
+            # =====================================
+            # LATE FINE ONLY FOR STUDENTS
+            # =====================================
+
+            if (
+                request.user.role == 'student'
+                and issue.due_date
+                and date.today() > issue.due_date
+            ):
+
+                late_days = (
+                    date.today() - issue.due_date
+                ).days
+
+                fine_amount = late_days * 5
+
+                Fine.objects.create(
+                    user=request.user,
+                    amount=fine_amount,
+                    reason=f"Late Return Fine for {issue.book.title}"
+                )
+
+        # =====================================
+        # DAMAGED BOOK
+        # =====================================
+
+        elif return_type == 'damaged':
+
+            issue.status = 'damaged'
+
+            issue.return_reason = reason
+
+            issue.save(
+                update_fields=[
+                    'status',
+                    'return_reason'
+                ]
+            )
+
+            # DAMAGE FINE FOR BOTH
+            # STUDENT & TEACHER
+
+            Fine.objects.create(
+                user=request.user,
+                amount=issue.book.price + 200,
+                reason=f"Damaged Book : {issue.book.title}"
+            )
+
+        # =====================================
+        # LOST BOOK
+        # =====================================
+
+        elif return_type == 'lost':
+
+            issue.status = 'lost'
+
+            issue.return_reason = reason
+
+            issue.save(
+                update_fields=[
+                    'status',
+                    'return_reason'
+                ]
+            )
+
+            # LOST BOOK FINE FOR BOTH
+            # STUDENT & TEACHER
+
+            Fine.objects.create(
+                user=request.user,
+                amount=issue.book.price + 500,
+                reason=f"Lost Book : {issue.book.title}"
+            )
+
+        return redirect(
+            '/issue/return/'
+        )
 
     return render(
         request,
@@ -98,7 +213,6 @@ def return_books(request):
             'borrowed': borrowed
         }
     )
-
 # =========================================
 # REQUEST BOOK API
 # =========================================

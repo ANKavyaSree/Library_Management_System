@@ -34,6 +34,19 @@ from rest_framework_simplejwt.tokens import (
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
+from django.http import JsonResponse
+def check_session(request):
+
+    return JsonResponse({
+        'authenticated': request.user.is_authenticated
+    })
+
+def home(request):
+
+    return render(
+        request,
+        'home.html'
+    )
 
 @login_required
 def profile_view(request):
@@ -129,20 +142,31 @@ def register_view(request):
 # LOGIN VIEW
 # ==========================================
 
+
 def login_view(request):
 
-    # if already logged in in this browser
+    # IF USER ALREADY LOGGED IN
+    # DO NOT ALLOW ANOTHER LOGIN
 
     if request.user.is_authenticated:
 
-        messages.error(
+        messages.warning(
             request,
-            f'{request.user.username} is already logged in. Please logout first.'
+            f"{request.user.username} is already logged in. Please logout first."
         )
 
-        logout(request)
+        # REDIRECT TO THEIR OWN DASHBOARD
 
-        return redirect('login')
+        if request.user.role == 'student':
+            return redirect('student_dashboard')
+
+        elif request.user.role == 'teacher':
+            return redirect('teacher_dashboard')
+
+        elif request.user.role == 'librarian':
+            return redirect('librarian_dashboard')
+
+    # LOGIN PROCESS
 
     if request.method == 'POST':
 
@@ -160,36 +184,38 @@ def login_view(request):
 
         if user is not None:
 
-            # validate role
+            # CHECK ROLE MATCH
 
-            if getattr(user, 'role', None) != role:
+            if user.role != role:
 
                 messages.error(
                     request,
-                    'Invalid role selected'
+                    "Selected role does not match account."
                 )
 
                 return redirect('login')
 
-            # login user
+            # LOGIN USER
 
             login(request, user)
 
-            messages.success(
-                request,
-                'Login successful'
-            )
+            # ROLE BASED REDIRECT
 
-            return redirect_by_role(user)
+            if user.role == 'student':
+                return redirect('student_dashboard')
+
+            elif user.role == 'teacher':
+                return redirect('teacher_dashboard')
+
+            elif user.role == 'librarian':
+                return redirect('librarian_dashboard')
 
         else:
 
             messages.error(
                 request,
-                'Invalid username or password'
+                "Invalid username or password"
             )
-
-            return redirect('login')
 
     return render(
         request,
@@ -208,7 +234,7 @@ def logout_view(request):
         'Logout successful'
     )
 
-    return redirect('login')
+    return redirect('home')
 
 
 # ==========================================

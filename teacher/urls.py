@@ -27,4 +27,9 @@ urlpatterns = [
         views.teacher_return_books,
         name='teacher_return_books'
     ),
+    path(
+    'fines/',
+    views.teacher_fines,
+    name='teacher_fines'
+),
 ]

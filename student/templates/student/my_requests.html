@@ -77,9 +77,13 @@
 
                     <tr>
 
+                        <!-- ID -->
+
                         <td class="px-4 fw-semibold">
                             #{{ item.id }}
                         </td>
+
+                        <!-- BOOK -->
 
                         <td>
 
@@ -105,51 +109,114 @@
 
                         </td>
 
+                        <!-- STATUS -->
+
                         <td>
 
-                            {% if item.status == 'pending' %}
+                           <td>
 
-                                <span class="badge rounded-pill bg-warning text-dark px-3 py-2">
+    {% if item.status == 'pending' %}
 
-                                    <i class="fa-solid fa-clock me-1"></i>
+        <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
 
-                                    Pending
+            <i class="fa-solid fa-clock me-1"></i>
 
-                                </span>
+            Pending
 
-                            {% elif item.status == 'approved' %}
+        </span>
 
-                                <span class="badge rounded-pill bg-success px-3 py-2">
+    {% elif item.status == 'approved' %}
 
-                                    <i class="fa-solid fa-circle-check me-1"></i>
+        <span class="badge bg-success rounded-pill px-3 py-2">
 
-                                    Approved
+            <i class="fa-solid fa-circle-check me-1"></i>
 
-                                </span>
+            Approved
 
-                            {% elif item.status == 'rejected' %}
+        </span>
 
-                                <span class="badge rounded-pill bg-danger px-3 py-2">
+    {% elif item.status == 'rejected' %}
 
-                                    <i class="fa-solid fa-circle-xmark me-1"></i>
+        <span class="badge bg-danger rounded-pill px-3 py-2">
 
-                                    Rejected
+            <i class="fa-solid fa-circle-xmark me-1"></i>
 
-                                </span>
+            Rejected
 
-                            {% elif item.status == 'returned' %}
+        </span>
 
-                                <span class="badge rounded-pill bg-info px-3 py-2">
+        {% if item.rejection_reason %}
 
-                                    <i class="fa-solid fa-arrow-rotate-left me-1"></i>
+            <div class="small text-danger mt-2">
 
-                                    Returned
+                <strong>Reason:</strong>
 
-                                </span>
+                {{ item.rejection_reason }}
 
-                            {% endif %}
+            </div>
 
+        {% endif %}
+
+    {% elif item.status == 'returned' %}
+
+        <span class="badge bg-info rounded-pill px-3 py-2">
+
+            <i class="fa-solid fa-arrow-rotate-left me-1"></i>
+
+            Returned
+
+        </span>
+
+    {% elif item.status == 'damaged' %}
+
+        <span class="badge bg-warning rounded-pill px-3 py-2">
+
+            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+
+            Damaged
+
+        </span>
+
+        {% if item.return_reason %}
+
+            <div class="small text-warning mt-2">
+
+                <strong>Reason:</strong>
+
+                {{ item.return_reason }}
+
+            </div>
+
+        {% endif %}
+
+    {% elif item.status == 'lost' %}
+
+        <span class="badge bg-dark rounded-pill px-3 py-2">
+
+            <i class="fa-solid fa-book-dead me-1"></i>
+
+            Lost
+
+        </span>
+
+        {% if item.return_reason %}
+
+            <div class="small text-danger mt-2">
+
+                <strong>Reason:</strong>
+
+                {{ item.return_reason }}
+
+            </div>
+
+        {% endif %}
+
+    {% endif %}
+
+</td>
                         </td>
+
+                        <!-- ISSUE DATE -->
 
                         <td>
 
@@ -160,12 +227,16 @@
                             {% else %}
 
                                 <span class="text-muted">
+
                                     --
+
                                 </span>
 
                             {% endif %}
 
                         </td>
+
+                        <!-- DUE DATE -->
 
                         <td>
 
@@ -176,7 +247,9 @@
                             {% else %}
 
                                 <span class="text-muted">
+
                                     --
+
                                 </span>
 
                             {% endif %}

@@ -240,3 +240,5 @@ CSRF_FAILURE_VIEW = 'accounts.views.csrf_error'
 # ==========================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

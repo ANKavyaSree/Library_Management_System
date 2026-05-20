@@ -1,50 +1,103 @@
-"""
-URL configuration for LMS project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from accounts.views import home
 
 urlpatterns = [
 
-    path('admin/', admin.site.urls),
+    # HOME PAGE
 
-    # Accounts
-    path('', include('accounts.urls')),
+    path(
+        '',
+        home,
+        name='home'
+    ),
 
-    # Books HTML URLs
-    path('books/', include('books.urls')),
+    # ADMIN
 
-    # Books APIs
-    path('api/', include('books.urls')),
+    path(
+        'admin/',
+        admin.site.urls
+    ),
 
-    # Student
-    path('student/', include('student.urls')),
+    # ACCOUNTS
 
-    # Fines
-    path('fines/', include('fines.urls')),
-    path('api/',include('fines.urls')),
+    path(
+        '',
+        include('accounts.urls')
+    ),
 
-    # Teacher
-    path('teacher/', include('teacher.urls')),
+    # BOOKS HTML URLs
 
-    # Issue
-    path('issue/', include('issue.urls')),
-    path('api/', include('issue.urls')),
+    path(
+        'books/',
+        include('books.urls')
+    ),
 
-    # Librarian
-    path('librarian/', include('librarian.urls')),
-    path('api/',include('librarian.urls')),
+    # BOOKS APIs
+
+    path(
+        'api/',
+        include('books.urls')
+    ),
+
+    # STUDENT
+
+    path(
+        'student/',
+        include('student.urls')
+    ),
+
+    # FINES
+
+    path(
+        'fines/',
+        include('fines.urls')
+    ),
+
+    path(
+        'api/',
+        include('fines.urls')
+    ),
+
+    # TEACHER
+
+    path(
+        'teacher/',
+        include('teacher.urls')
+    ),
+
+    # ISSUE
+
+    path(
+        'issue/',
+        include('issue.urls')
+    ),
+
+    path(
+        'api/',
+        include('issue.urls')
+    ),
+
+    # LIBRARIAN
+
+    path(
+        'librarian/',
+        include('librarian.urls')
+    ),
+
+    path(
+        'api/',
+        include('librarian.urls')
+    ),
+
 ]
+
+
+if settings.DEBUG:
+
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT
+    )

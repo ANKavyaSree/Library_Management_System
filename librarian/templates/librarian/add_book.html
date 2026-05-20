@@ -56,7 +56,11 @@
 
 <!-- FORM CARD -->
 
-<div class="card border-0 shadow-sm rounded-4">
+<div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+
+    <!-- TOP BAR -->
+
+    <div class="top-bar"></div>
 
     <div class="card-body p-5">
 
@@ -72,6 +76,8 @@
 
                     <label class="form-label fw-semibold">
 
+                        <i class="fa-solid fa-book me-2 text-primary"></i>
+
                         Book Title
 
                     </label>
@@ -85,6 +91,8 @@
                 <div class="col-md-6">
 
                     <label class="form-label fw-semibold">
+
+                        <i class="fa-solid fa-user-pen me-2 text-success"></i>
 
                         Author
 
@@ -100,6 +108,8 @@
 
                     <label class="form-label fw-semibold">
 
+                        <i class="fa-solid fa-barcode me-2 text-warning"></i>
+
                         ISBN
 
                     </label>
@@ -114,6 +124,8 @@
 
                     <label class="form-label fw-semibold">
 
+                        <i class="fa-solid fa-layer-group me-2 text-info"></i>
+
                         Category
 
                     </label>
@@ -124,9 +136,11 @@
 
                 <!-- QUANTITY -->
 
-                <div class="col-md-6">
+                <div class="col-md-4">
 
                     <label class="form-label fw-semibold">
+
+                        <i class="fa-solid fa-boxes-stacked me-2 text-danger"></i>
 
                         Quantity
 
@@ -138,9 +152,11 @@
 
                 <!-- AVAILABLE -->
 
-                <div class="col-md-6">
+                <div class="col-md-4">
 
                     <label class="form-label fw-semibold">
+
+                        <i class="fa-solid fa-check-circle me-2 text-success"></i>
 
                         Available Books
 
@@ -150,11 +166,29 @@
 
                 </div>
 
+                <!-- PRICE -->
+
+                <div class="col-md-4">
+
+                    <label class="form-label fw-semibold">
+
+                        <i class="fa-solid fa-indian-rupee-sign me-2 text-primary"></i>
+
+                        Book Price
+
+                    </label>
+
+                    {{ form.price }}
+
+                </div>
+
                 <!-- DESCRIPTION -->
 
                 <div class="col-12">
 
                     <label class="form-label fw-semibold">
+
+                        <i class="fa-solid fa-align-left me-2 text-secondary"></i>
 
                         Description
 
@@ -166,18 +200,25 @@
 
             </div>
 
-            <!-- BUTTON -->
+            <!-- BUTTONS -->
 
-            <div class="mt-5">
+            <div class="mt-5 d-flex gap-3 flex-wrap">
 
                 <button type="submit"
-                        class="btn btn-success rounded-pill px-5 py-2">
+                        class="btn btn-success rounded-pill px-5 py-2 shadow-sm">
 
                     <i class="fa-solid fa-floppy-disk me-2"></i>
 
                     Save Book
 
                 </button>
+
+                <a href="/librarian/books/"
+                   class="btn btn-outline-secondary rounded-pill px-5 py-2">
+
+                    Cancel
+
+                </a>
 
             </div>
 
@@ -189,35 +230,78 @@
 
 <style>
 
+    .top-bar{
+
+        height:8px;
+
+        background:linear-gradient(
+            90deg,
+            #2563eb,
+            #0f766e,
+            #7c3aed
+        );
+    }
+
+    .card{
+
+        background:#ffffff;
+    }
+
     input,
     select,
     textarea{
 
         width:100%;
 
-        padding:12px 15px;
+        padding:14px 16px;
 
         border:1px solid #d1d5db;
 
-        border-radius:12px;
+        border-radius:14px;
 
         outline:none;
 
         transition:0.3s;
+
+        background:#f8fafc;
+
+        font-size:15px;
     }
 
     input:focus,
     select:focus,
     textarea:focus{
 
-        border-color:#0f766e;
+        border-color:#2563eb;
 
-        box-shadow:0 0 0 3px rgba(15,118,110,0.15);
+        background:#fff;
+
+        box-shadow:
+            0 0 0 4px rgba(37,99,235,0.12);
     }
 
     textarea{
 
-        min-height:120px;
+        min-height:130px;
+
+        resize:none;
+    }
+
+    .form-label{
+
+        color:#374151;
+
+        margin-bottom:10px;
+    }
+
+    .btn{
+
+        transition:0.3s;
+    }
+
+    .btn:hover{
+
+        transform:translateY(-2px);
     }
 
 </style>

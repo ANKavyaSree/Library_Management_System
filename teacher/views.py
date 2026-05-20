@@ -5,12 +5,14 @@ from django.shortcuts import (
 )
 
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 
 from books.models import Book
 
 from books.models import Category
 
 from issue.models import IssueBook
+from fines.models import Fine
 
 
 # =========================================
@@ -151,28 +153,101 @@ def teacher_return_books(request):
 
     if request.method == 'POST':
 
-        borrow_id = request.POST.get(
-            'borrow_id'
+        issue_id = request.POST.get(
+            'issue_id'
+        )
+
+        return_type = request.POST.get(
+            'return_type'
+        )
+
+        reason = request.POST.get(
+            'reason'
         )
 
         issue = get_object_or_404(
-            IssueBook,
-            id=borrow_id,
-            user=request.user
+             IssueBook,
+              id=issue_id,
+              user=request.user
+           )
+
+        # ======================================
+        # NORMAL RETURN
+        # ======================================
+
+        if return_type == 'normal':
+
+            issue.status = 'returned'
+
+            issue.return_reason = reason
+
+            issue.save()
+
+            # UPDATE AVAILABLE BOOKS
+
+            book = issue.book
+
+            book.available += 1
+
+            book.save()
+
+        # ======================================
+        # DAMAGED BOOK
+        # ======================================
+
+        elif return_type == 'damaged':
+
+            issue.status = 'damaged'
+
+            issue.return_reason = reason
+
+            issue.save()
+
+            # CREATE DAMAGE FINE
+
+            Fine.objects.get_or_create(
+
+                user=request.user,
+
+                reason=f"Damaged Book: {issue.book.title}",
+
+                defaults={
+                    'amount': issue.book.price + 200
+                }
+            )
+
+        # ======================================
+        # LOST BOOK
+        # ======================================
+
+        elif return_type == 'lost':
+
+            issue.status = 'lost'
+
+            issue.return_reason = reason
+
+            issue.save()
+
+            # CREATE LOST BOOK FINE
+
+            Fine.objects.get_or_create(
+
+                user=request.user,
+
+                reason=f"Lost Book: {issue.book.title}",
+
+                defaults={
+                    'amount': issue.book.price + 500
+                }
+            )
+
+        messages.success(
+            request,
+            'Book return submitted successfully'
         )
 
-        issue.status = 'returned'
-
-        issue.save()
-
-        book = issue.book
-
-        book.available += 1
-
-        book.save()
-
         return redirect(
-            'teacher_my_requests'
+            'teacher_return_books'
         )
 
     return render(
@@ -180,5 +255,24 @@ def teacher_return_books(request):
         'issue/return_books.html',
         {
             'borrowed': borrowed
+        }
+    )
+@login_required
+def teacher_fines(request):
+
+    fines = Fine.objects.filter(
+        user=request.user
+    ).order_by('-created_at')
+
+    total_fine = fines.filter(
+        paid=False
+    )
+
+    return render(
+        request,
+        'fines/my_fines.html',
+        {
+            'fines': fines,
+            'total_fine': total_fine
         }
     )

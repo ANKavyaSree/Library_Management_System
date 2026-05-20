@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 
 {% block title %}
-    Students
+Students
 {% endblock %}
 
 {% block page_title %}
-    Students
+Students
 {% endblock %}
 
 {% block content %}
@@ -24,37 +24,20 @@
 
         <p class="text-muted mb-0">
 
-            View and manage all registered students
+            View all registered students and borrowed books
 
         </p>
 
     </div>
 
-    <div class="d-flex gap-2 flex-wrap">
+    <a href="/librarian/dashboard/"
+       class="btn btn-dark rounded-pill px-4">
 
-        <!-- ADD STUDENT -->
+        <i class="fa-solid fa-arrow-left me-2"></i>
 
-        <a href="/register/"
-           class="btn btn-primary rounded-pill px-4">
+        Back
 
-            <i class="fa-solid fa-user-plus me-2"></i>
-
-            Add Student
-
-        </a>
-
-        <!-- BACK -->
-
-        <a href="/librarian/dashboard/"
-           class="btn btn-dark rounded-pill px-4">
-
-            <i class="fa-solid fa-arrow-left me-2"></i>
-
-            Back
-
-        </a>
-
-    </div>
+    </a>
 
 </div>
 
@@ -126,6 +109,12 @@
 
                         </th>
 
+                        <th class="py-3">
+
+                            Books Taken
+
+                        </th>
+
                         <th class="py-3 text-center">
 
                             Action
@@ -190,11 +179,39 @@
 
                         </td>
 
+                        <!-- BOOKS TAKEN -->
+
+                        <td>
+
+                            {% for issue in student.issuebook_set.all %}
+
+                                {% if issue.status == 'approved' or issue.status == 'returned' %}
+
+                                    <span class="badge bg-primary mb-1">
+
+                                        {{ issue.book.title }}
+
+                                    </span>
+
+                                {% endif %}
+
+                            {% empty %}
+
+                                <span class="text-muted">
+
+                                    No Books Taken
+
+                                </span>
+
+                            {% endfor %}
+
+                        </td>
+
                         <!-- ACTION -->
 
                         <td class="text-center">
 
-                            <a href="/librarian/student/delete/{{ student.id }}/"
+                            <a href="/librarian/students/delete/{{ student.id }}/"
                                class="btn btn-danger btn-sm rounded-pill px-3">
 
                                 <i class="fa-solid fa-trash me-1"></i>
@@ -211,7 +228,7 @@
 
                     <tr>
 
-                        <td colspan="4" class="text-center py-5">
+                        <td colspan="5" class="text-center py-5">
 
                             <div class="empty-box">
 

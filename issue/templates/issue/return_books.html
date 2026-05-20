@@ -10,55 +10,77 @@
 
 {% block content %}
 
-<!-- TOP HEADER -->
+<!-- HEADER -->
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-
-    <!-- LEFT -->
 
     <div>
 
         <h3 class="fw-bold text-dark mb-1">
+
             Borrowed Books
+
         </h3>
 
         <p class="text-muted mb-0">
+
             Return your borrowed library books
+
         </p>
 
     </div>
-
-    <!-- RIGHT -->
 
     <div>
 
         {% if request.user.role == 'student' %}
 
-        <a href="/student/dashboard/"
-           class="btn btn-dark rounded-pill px-4 py-2 shadow-sm">
+            <a href="/student/dashboard/"
+               class="btn btn-dark rounded-pill px-4 py-2 shadow-sm">
 
-            <i class="fa-solid fa-arrow-left me-2"></i>
+                <i class="fa-solid fa-arrow-left me-2"></i>
 
-            Back to Dashboard
+                Back to Dashboard
 
-        </a>
+            </a>
 
         {% elif request.user.role == 'teacher' %}
 
-        <a href="/teacher/dashboard/"
-           class="btn btn-dark rounded-pill px-4 py-2 shadow-sm">
+            <a href="/teacher/dashboard/"
+               class="btn btn-dark rounded-pill px-4 py-2 shadow-sm">
 
-            <i class="fa-solid fa-arrow-left me-2"></i>
+                <i class="fa-solid fa-arrow-left me-2"></i>
 
-            Back to Dashboard
+                Back to Dashboard
 
-        </a>
+            </a>
 
         {% endif %}
 
     </div>
 
 </div>
+
+<!-- ALERTS -->
+
+{% if messages %}
+
+    {% for message in messages %}
+
+        <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4">
+
+            {{ message }}
+
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
+
+        </div>
+
+    {% endfor %}
+
+{% endif %}
 
 <!-- BOOK LIST -->
 
@@ -92,9 +114,9 @@
 
                 </div>
 
-                <!-- TITLE -->
+                <!-- BOOK TITLE -->
 
-                <h4 class="fw-bold text-dark">
+                <h4 class="fw-bold text-dark mb-3">
 
                     {{ item.book.title }}
 
@@ -120,6 +142,28 @@
 
                 </p>
 
+                <!-- BOOK PRICE -->
+
+                <p class="text-muted mb-2">
+
+                    <i class="fa-solid fa-indian-rupee-sign me-2"></i>
+
+                    Price :
+                    ₹{{ item.book.price }}
+
+                </p>
+
+                <!-- ISSUE DATE -->
+
+                <p class="text-muted mb-2">
+
+                    <i class="fa-solid fa-calendar-check me-2"></i>
+
+                    Issue Date :
+                    {{ item.issue_date }}
+
+                </p>
+
                 <!-- DUE DATE -->
 
                 <p class="text-danger mb-4">
@@ -133,15 +177,111 @@
 
                 <!-- RETURN FORM -->
 
-                <form method="post">
+                <form method="POST">
 
                     {% csrf_token %}
 
                     <input
                         type="hidden"
-                        name="borrow_id"
+                        name="issue_id"
                         value="{{ item.id }}"
                     >
+
+                    <!-- RETURN TYPE -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label fw-semibold">
+
+                            Return Type
+
+                        </label>
+
+                        <select
+                            name="return_type"
+                            class="form-select rounded-3"
+                            required
+                        >
+
+                            <option value="normal">
+
+                                Normal Return
+
+                            </option>
+
+                            <option value="damaged">
+
+                                Damaged Book
+
+                            </option>
+
+                            <option value="lost">
+
+                                Lost Book
+
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <!-- REASON -->
+
+                    <div class="mb-4">
+
+                        <label class="form-label fw-semibold">
+
+                            Reason / Notes
+
+                        </label>
+
+                        <textarea
+                            name="reason"
+                            rows="3"
+                            class="form-control rounded-3"
+                            placeholder="Enter reason if book is damaged or lost..."
+                        ></textarea>
+
+                    </div>
+
+                    <!-- PENALTY INFO -->
+
+                    <div class="alert alert-warning rounded-4 small">
+
+                        <strong>Penalty Rules:</strong>
+
+                        <ul class="mb-0 mt-2">
+
+                            <li>
+
+                                Damaged Book :
+                                Book Price + ₹200 Penalty
+
+                            </li>
+
+                            <li>
+
+                                Lost Book :
+                                Book Price + ₹500 Penalty
+
+                            </li>
+
+                            {% if request.user.role == 'student' %}
+
+                            <li>
+
+                                Late Return :
+                                ₹5 per day fine
+
+                            </li>
+
+                            {% endif %}
+
+                        </ul>
+
+                    </div>
+
+                    <!-- BUTTON -->
 
                     <button
                         type="submit"
@@ -150,7 +290,7 @@
 
                         <i class="fa-solid fa-arrow-rotate-left me-2"></i>
 
-                        Return Book
+                        Submit Return
 
                     </button>
 
@@ -173,11 +313,15 @@
                 <i class="fa-solid fa-book-open empty-icon mb-3"></i>
 
                 <h4 class="text-muted">
+
                     No Borrowed Books
+
                 </h4>
 
                 <p class="text-secondary mb-0">
+
                     You currently have no books to return.
+
                 </p>
 
             </div>
@@ -228,6 +372,20 @@
         font-size:70px;
 
         color:#cbd5e1;
+    }
+
+    .form-select,
+    .form-control{
+
+        border:1px solid #e2e8f0;
+    }
+
+    .form-select:focus,
+    .form-control:focus{
+
+        box-shadow:none;
+
+        border-color:#f59e0b;
     }
 
 </style>

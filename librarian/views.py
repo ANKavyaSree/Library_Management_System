@@ -7,6 +7,9 @@ from django.shortcuts import (
 )
 
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+
+from django.db.models import Sum
 
 from books.models import (
     Book,
@@ -21,10 +24,9 @@ from books.forms import (
 from issue.models import IssueBook
 
 from fines.models import Fine
+from fines.forms import FineForm
 
 from accounts.models import CustomUser
-
-from accounts.forms import RegisterForm
 
 from rest_framework.decorators import (
     api_view,
@@ -38,9 +40,7 @@ from rest_framework.permissions import (
 from rest_framework.response import Response
 
 from books.serializers import BookSerializer
-
 from issue.serializers import IssueBookSerializer
-
 from fines.serializers import FineSerializer
 
 
@@ -51,40 +51,44 @@ from fines.serializers import FineSerializer
 @login_required
 def dashboard(request):
 
-    context = {
+    total_books = Book.objects.count()
 
-        'total_books': Book.objects.count(),
+    total_available_books = Book.objects.aggregate(
+        total=Sum('available')
+    )['total'] or 0
 
-        'pending_requests': IssueBook.objects.filter(
-            status='pending'
-        ).count(),
+    pending_requests = IssueBook.objects.filter(
+        status__in=[
+            'pending',
+            'return_requested'
+        ]
+    ).count()
 
-        'issued_books': IssueBook.objects.filter(
-            status='approved'
-        ).count(),
+    issued_books = IssueBook.objects.filter(
+        status='approved'
+    ).count()
 
-        'total_fines': Fine.objects.filter(
-            user__role='student'
-        ).count(),
+    total_fines = Fine.objects.aggregate(
+        total=Sum('amount')
+    )['total'] or 0
 
-        'unpaid_fines': Fine.objects.filter(
-            user__role='student',
-            paid=False
-        ).count(),
-
-        'students_count': CustomUser.objects.filter(
-            role='student'
-        ).count(),
-
-        'teachers_count': CustomUser.objects.filter(
-            role='teacher'
-        ).count(),
-    }
+    unpaid_fines = Fine.objects.filter(
+        paid=False
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or 0
 
     return render(
         request,
         'librarian/dashboard.html',
-        context
+        {
+            'total_books': total_books,
+            'total_available_books': total_available_books,
+            'pending_requests': pending_requests,
+            'issued_books': issued_books,
+            'total_fines': total_fines,
+            'unpaid_fines': unpaid_fines,
+        }
     )
 
 
@@ -123,6 +127,11 @@ def add_book(request):
 
         form.save()
 
+        messages.success(
+            request,
+            'Book added successfully'
+        )
+
         return redirect(
             'book_list'
         )
@@ -157,6 +166,11 @@ def edit_book(request, pk):
 
         form.save()
 
+        messages.success(
+            request,
+            'Book updated successfully'
+        )
+
         return redirect(
             'book_list'
         )
@@ -185,6 +199,11 @@ def delete_book(request, pk):
 
     book.delete()
 
+    messages.success(
+        request,
+        'Book deleted successfully'
+    )
+
     return redirect(
         'book_list'
     )
@@ -204,6 +223,11 @@ def add_category(request):
     if form.is_valid():
 
         form.save()
+
+        messages.success(
+            request,
+            'Category added successfully'
+        )
 
         return redirect(
             'book_list'
@@ -226,7 +250,10 @@ def add_category(request):
 def pending_requests(request):
 
     requests = IssueBook.objects.filter(
-        status='pending'
+        status__in=[
+            'pending',
+            'return_requested'
+        ]
     ).order_by('-request_date')
 
     return render(
@@ -271,13 +298,20 @@ def approve_request(request, pk):
 
         issue.save()
 
-        # REDUCE AVAILABLE COUNT
+        issue.book.available -= 1
+        issue.book.save()
 
-        book = issue.book
+        messages.success(
+            request,
+            'Book request approved successfully'
+        )
 
-        book.available -= 1
+    else:
 
-        book.save()
+        messages.error(
+            request,
+            'No books available'
+        )
 
     return redirect(
         'pending_requests'
@@ -293,16 +327,36 @@ def reject_request(request, pk):
 
     issue = get_object_or_404(
         IssueBook,
-        id=pk,
-        status='pending'
+        pk=pk
     )
 
-    issue.status = 'rejected'
+    if request.method == 'POST':
 
-    issue.save()
+        reason = request.POST.get(
+            'reason'
+        )
 
-    return redirect(
-        'pending_requests'
+        issue.status = 'rejected'
+
+        issue.rejection_reason = reason
+
+        issue.save()
+
+        messages.success(
+            request,
+            'Request rejected successfully'
+        )
+
+        return redirect(
+            'pending_requests'
+        )
+
+    return render(
+        request,
+        'librarian/reject_request.html',
+        {
+            'issue': issue
+        }
     )
 
 
@@ -314,15 +368,24 @@ def reject_request(request, pk):
 def returned_books(request):
 
     returned = IssueBook.objects.filter(
-        status='returned'
+        status__in=[
+            'returned',
+            'damaged',
+            'lost'
+        ]
     ).order_by('-request_date')
 
     today = date.today()
 
     for issue in returned:
 
+        # ======================================
+        # STUDENT LATE RETURN FINE
+        # ======================================
+
         if (
             issue.user.role == 'student'
+            and issue.status == 'returned'
             and issue.due_date
             and today > issue.due_date
         ):
@@ -333,18 +396,44 @@ def returned_books(request):
 
             fine_amount = days_late * 5
 
-            fine_exists = Fine.objects.filter(
+            Fine.objects.get_or_create(
                 user=issue.user,
-                reason__icontains=issue.book.title
-            ).exists()
+                reason=f"Late return for {issue.book.title}",
+                defaults={
+                    'amount': fine_amount,
+                    'paid': False
+                }
+            )
 
-            if not fine_exists:
+        # ======================================
+        # DAMAGED BOOK FINE
+        # ======================================
 
-                Fine.objects.create(
-                    user=issue.user,
-                    amount=fine_amount,
-                    reason=f"Late return for {issue.book.title}"
-                )
+        elif issue.status == 'damaged':
+
+            Fine.objects.get_or_create(
+                user=issue.user,
+                reason=f"Damaged Book: {issue.book.title}",
+                defaults={
+                    'amount': issue.book.price + 200,
+                    'paid': False
+                }
+            )
+
+        # ======================================
+        # LOST BOOK FINE
+        # ======================================
+
+        elif issue.status == 'lost':
+
+            Fine.objects.get_or_create(
+                user=issue.user,
+                reason=f"Lost Book: {issue.book.title}",
+                defaults={
+                    'amount': issue.book.price + 500,
+                    'paid': False
+                }
+            )
 
     return render(
         request,
@@ -356,21 +445,120 @@ def returned_books(request):
 
 
 # ======================================
+# APPROVE RETURN
+# ======================================
+
+@login_required
+def approve_return(request, pk):
+
+    issue = get_object_or_404(
+        IssueBook,
+        id=pk
+    )
+
+    action = request.POST.get('action')
+
+    # ======================================
+    # NORMAL RETURN
+    # ======================================
+
+    if action == 'returned':
+
+        issue.status = 'returned'
+
+        issue.save()
+
+        issue.book.available += 1
+        issue.book.save()
+
+        # STUDENT LATE FINE ONLY
+
+        if (
+            issue.user.role == 'student'
+            and issue.due_date
+            and date.today() > issue.due_date
+        ):
+
+            days_late = (
+                date.today() - issue.due_date
+            ).days
+
+            fine_amount = days_late * 5
+
+            Fine.objects.get_or_create(
+                user=issue.user,
+                reason=f"Late return for {issue.book.title}",
+                defaults={
+                    'amount': fine_amount,
+                    'paid': False
+                }
+            )
+
+    # ======================================
+    # DAMAGED BOOK
+    # ======================================
+
+    elif action == 'damaged':
+
+        issue.status = 'damaged'
+        issue.save()
+
+        Fine.objects.get_or_create(
+            user=issue.user,
+            reason=f"Damaged Book: {issue.book.title}",
+            defaults={
+                'amount': issue.book.price + 200,
+                'paid': False
+            }
+        )
+
+    # ======================================
+    # LOST BOOK
+    # ======================================
+
+    elif action == 'lost':
+
+        issue.status = 'lost'
+        issue.save()
+
+        Fine.objects.get_or_create(
+            user=issue.user,
+            reason=f"Lost Book: {issue.book.title}",
+            defaults={
+                'amount': issue.book.price + 500,
+                'paid': False
+            }
+        )
+
+    return redirect('returned_books')
+
+
+# ======================================
 # ALL FINES
 # ======================================
 
 @login_required
 def all_fines(request):
 
-    fines = Fine.objects.filter(
-        user__role='student'
-    ).order_by('-created_at')
+    fines = Fine.objects.all().order_by(
+        '-created_at'
+    )
+
+    paid_count = fines.filter(
+        paid=True
+    ).count()
+
+    unpaid_count = fines.filter(
+        paid=False
+    ).count()
 
     return render(
         request,
         'librarian/all_fines.html',
         {
-            'fines': fines
+            'fines': fines,
+            'paid_count': paid_count,
+            'unpaid_count': unpaid_count
         }
     )
 
@@ -382,34 +570,17 @@ def all_fines(request):
 @login_required
 def add_fine(request):
 
-    students = CustomUser.objects.filter(
-        role='student'
+    form = FineForm(
+        request.POST or None
     )
 
-    if request.method == 'POST':
+    if form.is_valid():
 
-        user_id = request.POST.get(
-            'student'
-        )
+        form.save()
 
-        amount = request.POST.get(
-            'amount'
-        )
-
-        reason = request.POST.get(
-            'reason'
-        )
-
-        student = get_object_or_404(
-            CustomUser,
-            id=user_id,
-            role='student'
-        )
-
-        Fine.objects.create(
-            user=student,
-            amount=amount,
-            reason=reason
+        messages.success(
+            request,
+            'Fine added successfully'
         )
 
         return redirect(
@@ -420,7 +591,7 @@ def add_fine(request):
         request,
         'librarian/add_fine.html',
         {
-            'students': students
+            'form': form
         }
     )
 
@@ -461,78 +632,6 @@ def teachers_list(request):
         'librarian/teachers.html',
         {
             'teachers': teachers
-        }
-    )
-
-
-# ======================================
-# ADD STUDENT
-# ======================================
-
-@login_required
-def add_student(request):
-
-    form = RegisterForm(
-        request.POST or None
-    )
-
-    if request.method == 'POST':
-
-        if form.is_valid():
-
-            user = form.save(
-                commit=False
-            )
-
-            user.role = 'student'
-
-            user.save()
-
-            return redirect(
-                'students_list'
-            )
-
-    return render(
-        request,
-        'librarian/add_student.html',
-        {
-            'form': form
-        }
-    )
-
-
-# ======================================
-# ADD TEACHER
-# ======================================
-
-@login_required
-def add_teacher(request):
-
-    form = RegisterForm(
-        request.POST or None
-    )
-
-    if request.method == 'POST':
-
-        if form.is_valid():
-
-            user = form.save(
-                commit=False
-            )
-
-            user.role = 'teacher'
-
-            user.save()
-
-            return redirect(
-                'teachers_list'
-            )
-
-    return render(
-        request,
-        'librarian/add_teacher.html',
-        {
-            'form': form
         }
     )
 
@@ -589,26 +688,30 @@ def dashboard_api(request):
 
         'total_books': Book.objects.count(),
 
+        'total_available_books': Book.objects.aggregate(
+            total=Sum('available')
+        )['total'] or 0,
+
         'pending_requests': IssueBook.objects.filter(
-            status='pending'
+            status__in=[
+                'pending',
+                'return_requested'
+            ]
         ).count(),
 
-        'approved_requests': IssueBook.objects.filter(
+        'issued_books': IssueBook.objects.filter(
             status='approved'
         ).count(),
 
-        'returned_books': IssueBook.objects.filter(
-            status='returned'
-        ).count(),
-
-        'total_fines': Fine.objects.filter(
-            user__role='student'
-        ).count(),
+        'total_fines': Fine.objects.aggregate(
+            total=Sum('amount')
+        )['total'] or 0,
 
         'unpaid_fines': Fine.objects.filter(
-            user__role='student',
             paid=False
-        ).count(),
+        ).aggregate(
+            total=Sum('amount')
+        )['total'] or 0,
     }
 
     return Response(data)
@@ -663,7 +766,10 @@ def delete_book_api(request, pk):
 def pending_requests_api(request):
 
     requests = IssueBook.objects.filter(
-        status='pending'
+        status__in=[
+            'pending',
+            'return_requested'
+        ]
     )
 
     serializer = IssueBookSerializer(
@@ -682,9 +788,7 @@ def pending_requests_api(request):
 @permission_classes([IsAuthenticated])
 def all_fines_api(request):
 
-    fines = Fine.objects.filter(
-        user__role='student'
-    )
+    fines = Fine.objects.all()
 
     serializer = FineSerializer(
         fines,

@@ -362,8 +362,13 @@
               <i class="fa-solid fa-arrow-rotate-left"></i>
               <span class="text">Return Books</span>
             </a>
-          </li>
+         <li>
+            <a href="/teacher/fines/">
+              <i class="fa-solid fa-money-bill-wave"></i>
 
+              <span class="text"> My Fines </span>
+            </a>
+          </li>
           <li>
             <a href="{% url 'profile' %}">
               <i class="fa-solid fa-user"></i>
@@ -372,7 +377,7 @@
           </li>
 
           {% endif %} 
-         {% if request.user.role == 'librarian' %}
+        {% if request.user.role == 'librarian' %}
 
 <li>
     <a href="/librarian/dashboard/">
@@ -410,23 +415,9 @@
 </li>
 
 <li>
-    <a href="/librarian/returned/">
-        <i class="fa-solid fa-arrow-rotate-left"></i>
-        <span class="text">Returned Books</span>
-    </a>
-</li>
-
-<li>
     <a href="/librarian/students/">
         <i class="fa-solid fa-user-graduate"></i>
         <span class="text">Students</span>
-    </a>
-</li>
-
-<li>
-    <a href="/librarian/students/add/">
-        <i class="fa-solid fa-user-plus"></i>
-        <span class="text">Add Student</span>
     </a>
 </li>
 
@@ -438,23 +429,22 @@
 </li>
 
 <li>
-    <a href="/librarian/teachers/add/">
-        <i class="fa-solid fa-user-tie"></i>
-        <span class="text">Add Teacher</span>
-    </a>
-</li>
-
-<li>
     <a href="/librarian/fines/">
         <i class="fa-solid fa-money-bill"></i>
         <span class="text">Manage Fines</span>
     </a>
 </li>
-
 <li>
     <a href="/librarian/fines/add/">
-        <i class="fa-solid fa-money-check-dollar"></i>
-        <span class="text">Add Fine</span>
+
+        <i class="fa-solid fa-plus"></i>
+
+        <span class="text">
+
+            Add Fine
+
+        </span>
+
     </a>
 </li>
 
@@ -464,28 +454,6 @@
         <span class="text">Profile</span>
     </a>
 </li>
-
-<li>
-    <form method="POST"
-          action="{% url 'logout' %}"
-          class="m-0">
-
-        {% csrf_token %}
-
-        <button type="submit"
-                class="btn border-0 bg-transparent text-start w-100 text-white d-flex align-items-center gap-2 px-3 py-2">
-
-            <i class="fa-solid fa-right-from-bracket"></i>
-
-            <span class="text">
-                Logout
-            </span>
-
-        </button>
-
-    </form>
-</li>
-
 {% endif %}
           <!-- LOGOUT -->
 
@@ -544,4 +512,36 @@
       </div>
     </div>
   </body>
+  <script>
+
+    // CHECK SESSION EVERY 2 SECONDS
+
+    setInterval(() => {
+
+        fetch('/check-session/')
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            // IF SESSION EXPIRED
+            // REDIRECT TO LOGIN
+
+            if (!data.authenticated) {
+
+                window.location.href = "/";
+
+            }
+
+        })
+
+        .catch(error => {
+
+            console.log(error);
+
+        });
+
+    }, 2000);
+
+</script>
 </html>

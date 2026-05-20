@@ -85,13 +85,6 @@ urlpatterns = [
         views.students_list,
         name='students_list'
     ),
-
-    path(
-        'students/add/',
-        views.add_student,
-        name='add_student'
-    ),
-
     path(
         'students/delete/<int:pk>/',
         views.delete_student,
@@ -108,11 +101,7 @@ urlpatterns = [
         name='teachers_list'
     ),
 
-    path(
-        'teachers/add/',
-        views.add_teacher,
-        name='add_teacher'
-    ),
+
 
     path(
         'teachers/delete/<int:pk>/',
@@ -131,10 +120,10 @@ urlpatterns = [
     ),
 
     path(
-        'fines/add/',
-        views.add_fine,
-        name='add_fine'
-    ),
+    'fines/add/',
+    views.add_fine,
+    name='add_fine'
+),
 
     # ======================================
     # API ROUTES

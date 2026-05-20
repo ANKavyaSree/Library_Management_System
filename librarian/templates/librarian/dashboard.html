@@ -14,9 +14,9 @@
 
 <div class="row g-4">
 
-    <!-- TOTAL BOOKS -->
+    <!-- TOTAL BOOK TITLES -->
 
-    <div class="col-md-4">
+    <div class="col-md-3">
 
         <div class="card border-0 shadow-sm rounded-4">
 
@@ -36,7 +36,39 @@
 
                 <p class="text-muted mb-0">
 
-                    Total Books
+                    Total Book Titles
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- AVAILABLE BOOKS -->
+
+    <div class="col-md-3">
+
+        <div class="card border-0 shadow-sm rounded-4">
+
+            <div class="card-body text-center p-4">
+
+                <div class="icon-box bg-success-subtle text-success mb-3">
+
+                    <i class="fa-solid fa-book-open"></i>
+
+                </div>
+
+                <h2 class="fw-bold">
+
+                    {{ total_available_books }}
+
+                </h2>
+
+                <p class="text-muted mb-0">
+
+                    Available Books
 
                 </p>
 
@@ -48,7 +80,7 @@
 
     <!-- PENDING REQUESTS -->
 
-    <div class="col-md-4">
+    <div class="col-md-3">
 
         <div class="card border-0 shadow-sm rounded-4">
 
@@ -80,13 +112,13 @@
 
     <!-- ISSUED BOOKS -->
 
-    <div class="col-md-4">
+    <div class="col-md-3">
 
         <div class="card border-0 shadow-sm rounded-4">
 
             <div class="card-body text-center p-4">
 
-                <div class="icon-box bg-success-subtle text-success mb-3">
+                <div class="icon-box bg-info-subtle text-info mb-3">
 
                     <i class="fa-solid fa-book-open-reader"></i>
 
@@ -112,13 +144,77 @@
 
 </div>
 
-<!-- FINE SECTION -->
+<!-- SECOND ROW -->
 
 <div class="row g-4 mt-2">
 
+    <!-- TOTAL STUDENTS -->
+
+    <div class="col-md-3">
+
+        <div class="card border-0 shadow-sm rounded-4">
+
+            <div class="card-body text-center p-4">
+
+                <div class="icon-box bg-dark-subtle text-dark mb-3">
+
+                    <i class="fa-solid fa-user-graduate"></i>
+
+                </div>
+
+                <h2 class="fw-bold">
+
+                    {{ total_students }}
+
+                </h2>
+
+                <p class="text-muted mb-0">
+
+                    Students
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- TOTAL TEACHERS -->
+
+    <div class="col-md-3">
+
+        <div class="card border-0 shadow-sm rounded-4">
+
+            <div class="card-body text-center p-4">
+
+                <div class="icon-box bg-secondary-subtle text-secondary mb-3">
+
+                    <i class="fa-solid fa-chalkboard-user"></i>
+
+                </div>
+
+                <h2 class="fw-bold">
+
+                    {{ total_teachers }}
+
+                </h2>
+
+                <p class="text-muted mb-0">
+
+                    Teachers
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
     <!-- TOTAL FINES -->
 
-    <div class="col-md-6">
+    <div class="col-md-3">
 
         <div class="card border-0 shadow-sm rounded-4">
 
@@ -150,7 +246,7 @@
 
     <!-- UNPAID FINES -->
 
-    <div class="col-md-6">
+    <div class="col-md-3">
 
         <div class="card border-0 shadow-sm rounded-4">
 
@@ -219,7 +315,7 @@
 
     </div>
 
-    <!-- MANAGE REQUESTS -->
+    <!-- REQUESTS -->
 
     <div class="col-md-3">
 
@@ -252,7 +348,7 @@
 
     </div>
 
-    <!-- MANAGE FINES -->
+    <!-- FINES -->
 
     <div class="col-md-3">
 
@@ -273,7 +369,7 @@
 
                     <p class="text-muted mb-0">
 
-                        View and manage student fines
+                        View and manage fines
 
                     </p>
 
